@@ -1,0 +1,31 @@
+plugins {
+    id 'java-library'
+}
+
+allprojects {
+    group = 'com.simplelauncher.engine'
+    version = '0.1.0'
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: 'java-library'
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+}
+
+project(':runtime') {
+    dependencies {
+        api project(':core')
+    }
+}
+
+project(':game') {
+    dependencies {
+        api project(':core')
+    }
+}
