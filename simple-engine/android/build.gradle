@@ -1,0 +1,18 @@
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    namespace 'com.simplelauncher.engine.android'
+    compileSdk 35
+
+    defaultConfig {
+        minSdk 24
+    }
+}
+
+dependencies {
+    api project(':core')
+    api project(':runtime')
+    api project(':game')
+}
