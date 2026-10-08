@@ -17,6 +17,12 @@ jobs:
       - name: Checkout Simple Launcher
         uses: actions/checkout@v4
 
+      - name: Set up JDK 8 for Android LWJGL build
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
