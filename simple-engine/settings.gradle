@@ -1,2 +1,2 @@
 rootProject.name = "simple-engine"
-include(":core", ":runtime", ":game")
+include(":core", ":runtime", ":game", ":android")
