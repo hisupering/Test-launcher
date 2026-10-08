@@ -235,7 +235,7 @@ public final class SimpleLauncherActivity extends Activity {
 
                 File versionJson = new File(engine.getRoot(),"versions/" + version + "/" + version + ".json");
                 if (!versionJson.isFile()) throw new IllegalStateException("Installed version metadata is missing");
-                String json = java.nio.file.Files.readString(versionJson.toPath());
+                String json = new String(java.nio.file.Files.readAllBytes(versionJson.toPath()), java.nio.charset.StandardCharsets.UTF_8);
 
                 File gameDir = new File(engine.getRoot(),"game");
                 File assetsDir = new File(engine.getRoot(),"assets");
