@@ -55,7 +55,10 @@ public class TestLauncherHomeFragment extends Fragment {
         View worlds = view.findViewById(R.id.test_worlds);
 
         play.setOnClickListener(v -> {
-            if (!Tools.hasOnlineProfile()) {
+            // Both Local and Microsoft accounts are valid launcher profiles.
+            // Tools.hasOnlineProfile() only recognizes authenticated online accounts,
+            // so using it here incorrectly blocked Local Account from launching.
+            if (PojavProfile.getCurrentProfileContent(requireContext(), null) == null) {
                 Tools.swapFragment(requireActivity(), SelectAuthFragment.class, SelectAuthFragment.TAG, null);
                 return;
             }
