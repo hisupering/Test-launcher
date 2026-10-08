@@ -31,7 +31,7 @@ public class TestLauncherHomeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         if (PojavProfile.getCurrentProfileContent(requireContext(), null) == null) {
-            Tools.swapFragment(requireActivity(), TestTestSelectAuthFragment.class, TestTestSelectAuthFragment.TAG, null);
+            Tools.swapFragment(requireActivity(), TestSelectAuthFragment.class, TestSelectAuthFragment.TAG, null);
             return;
         }
 
