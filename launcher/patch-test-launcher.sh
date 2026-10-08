@@ -40,6 +40,57 @@ from pathlib import Path
 p = Path(__import__("sys").argv[1])
 s = p.read_text()
 
+# The custom home screen bypasses the legacy account spinner. The engine itself
+# already supports local/offline accounts, but the legacy launch listener reads
+# the spinner selection and can therefore think no account is selected and send
+# the user back to Microsoft authentication. Use the persisted current profile
+# for the launch path instead.
+if 'import net.kdt.pojavlaunch.value.MinecraftAccount;' not in s:
+    s = s.replace(
+        'import net.kdt.pojavlaunch.value.launcherprofiles.LauncherProfiles;',
+        'import net.kdt.pojavlaunch.value.MinecraftAccount;\n'
+        'import net.kdt.pojavlaunch.value.launcherprofiles.LauncherProfiles;'
+    )
+
+if 'import net.kdt.pojavlaunch.PojavProfile;' not in s:
+    s = s.replace(
+        'import net.kdt.pojavlaunch.fragments.MainMenuFragment;',
+        'import net.kdt.pojavlaunch.fragments.MainMenuFragment;\n'
+        'import net.kdt.pojavlaunch.PojavProfile;'
+    )
+
+start = 'private final ExtraListener<Boolean> mLaunchGameListener = (key, value) -> {'
+if start in s:
+    begin = s.index(start)
+    end = s.index('private final TaskCountListener mDoubleLaunchPreventionListener', begin)
+    block = s[begin:end]
+    if 'MinecraftAccount selectedAccount = PojavProfile.getCurrentProfileContent(this, null);' not in block:
+        block = block.replace(
+            'private final ExtraListener<Boolean> mLaunchGameListener = (key, value) -> {',
+            start + '''
+\n
+MinecraftAccount selectedAccount = PojavProfile.getCurrentProfileContent(this, null);
+if (selectedAccount == null) {
+    Toast.makeText(this, R.string.no_saved_accounts, Toast.LENGTH_LONG).show();
+    ExtraCore.setValue(ExtraConstants.SELECT_AUTH_METHOD, true);
+    return false;
+}
+'''
+        )
+    block = block.replace('mAccountSpinner.getSelectedAccount()', 'selectedAccount')
+    # Do not force local profiles through the online-only dialog.
+    block = block.replace(
+        'if (selectedAccount == null) {\n\nToast.makeText(this, R.string.no_saved_accounts, Toast.LENGTH_LONG).show();\n\nExtraCore.setValue(ExtraConstants.SELECT_AUTH_METHOD, true);\n\nreturn false;\n\n}',
+        'if (selectedAccount == null) {\n\nToast.makeText(this, R.string.no_saved_accounts, Toast.LENGTH_LONG).show();\n\nExtraCore.setValue(ExtraConstants.SELECT_AUTH_METHOD, true);\n\nreturn false;\n\n}'
+    )
+    s = s[:begin] + block + s[end:]
+
+p.write_text(s)
+PY
+
+$marker
+s = p.read_text()
+
 if 'net.kdt.pojavlaunch.launcher.TestLauncherHomeFragment' not in s:
     s = s.replace(
         'import net.kdt.pojavlaunch.fragments.MainMenuFragment;',
