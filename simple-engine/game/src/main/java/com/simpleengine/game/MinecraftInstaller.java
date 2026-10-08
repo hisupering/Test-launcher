@@ -1,5 +1,8 @@
 package com.simpleengine.game;
 
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -32,8 +35,19 @@ public final class MinecraftInstaller {
             Files.createDirectories(index.getParent());
             MinecraftAssetDownloader.downloadIndex(
                     v.assetIndexUrl, index, v.assetIndexSha1);
+            downloadAssetObjects(index, assetsRoot);
         }
 
         return new MinecraftInstallResult(v, client, libs, index);
+    }
+
+    private static void downloadAssetObjects(Path index, Path assetsRoot) throws Exception {
+        JsonObject root = JsonParser.parseString(Files.readString(index)).getAsJsonObject();
+        JsonObject objects = root.getAsJsonObject("objects");
+        if (objects == null) return;
+        for (JsonElement e : objects.entrySet().stream().map(java.util.Map.Entry::getValue).toArray(JsonElement[]::new)) {
+            if (!e.isJsonObject() || !e.getAsJsonObject().has("hash")) continue;
+            MinecraftAssetDownloader.ensureObject(assetsRoot, e.getAsJsonObject().get("hash").getAsString());
+        }
     }
 }
