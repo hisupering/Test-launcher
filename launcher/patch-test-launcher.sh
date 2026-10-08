@@ -42,8 +42,8 @@ s = p.read_text()
 if 'net.kdt.pojavlaunch.launcher.TestLauncherHomeFragment' not in s:
     s = s.replace(
         'import net.kdt.pojavlaunch.fragments.MainMenuFragment;',
-        'import net.kdt.pojavlaunch.fragments.MainMenuFragment;\\n'
-        'import net.kdt.pojavlaunch.launcher.TestLauncherHomeFragment;\\n'
+        'import net.kdt.pojavlaunch.fragments.MainMenuFragment;\n'
+        'import net.kdt.pojavlaunch.launcher.TestLauncherHomeFragment;\n'
         'import net.kdt.pojavlaunch.launcher.TestSelectAuthFragment;'
     )
 
