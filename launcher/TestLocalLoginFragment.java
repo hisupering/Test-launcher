@@ -10,11 +10,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import net.kdt.pojavlaunch.PojavProfile;
 import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.Tools;
-import net.kdt.pojavlaunch.extra.ExtraConstants;
-import net.kdt.pojavlaunch.extra.ExtraCore;
-import net.kdt.pojavlaunch.PojavProfile;
 import net.kdt.pojavlaunch.value.MinecraftAccount;
 
 import java.io.File;
@@ -32,13 +30,11 @@ public class TestLocalLoginFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         username = view.findViewById(R.id.login_edit_email);
-
         view.findViewById(R.id.login_button).setOnClickListener(v -> create());
         username.setOnEditorActionListener((v, actionId, event) -> {
             create();
             return true;
         });
-
         AlphaAnimation a = new AlphaAnimation(0f, 1f);
         a.setDuration(220);
         view.startAnimation(a);
@@ -49,34 +45,32 @@ public class TestLocalLoginFragment extends Fragment {
         String name = username.getText().toString().trim();
 
         if (name.length() < 3 || name.length() > 16 || !pattern.matcher(name).matches()) {
-            Tools.dialog(context, "Invalid player name",
-                    "Use 3–16 characters: A-Z, 0-9 or _.");
+            Tools.dialog(context, "Invalid player name", "Use 3–16 characters: A-Z, 0-9 or _.");
             return;
         }
 
-        File account = new File(Tools.DIR_ACCOUNT_NEW, name + ".json");
-        if (account.exists()) {
-            Tools.dialog(context, "Account already exists",
-                    "This local account is already saved. Choose another name.");
+        File accountFile = new File(Tools.DIR_ACCOUNT_NEW, name + ".json");
+        if (accountFile.exists()) {
+            Tools.dialog(context, "Account already exists", "This local account is already saved. Choose another name.");
             return;
         }
 
         try {
-            MinecraftAccount accountData = new MinecraftAccount();
-            accountData.username = name;
-            accountData.accessToken = "0";
-            accountData.clientToken = "0";
-            accountData.profileId = "00000000-0000-0000-0000-000000000000";
-            accountData.isMicrosoft = false;
-            accountData.save();
-            PojavProfile.setCurrentProfile(requireContext(), name);
+            // Use the engine's native offline-account defaults.
+            MinecraftAccount account = new MinecraftAccount();
+            account.username = name;
+            account.save();
+            PojavProfile.setCurrentProfile(context, name);
+
+            if (PojavProfile.getCurrentProfileContent(context, null) == null) {
+                throw new IllegalStateException("Local account was not persisted");
+            }
         } catch (Exception e) {
             Tools.dialog(context, "Account error", "Could not save the local account. Please try again.");
             return;
         }
 
-        ExtraCore.setValue(ExtraConstants.MOJANG_LOGIN_TODO, new String[]{name, ""});
-        username.postDelayed(() -> Tools.swapFragment(requireActivity(), TestLauncherHomeFragment.class,
-                TestLauncherHomeFragment.TAG, null), 450);
+        username.postDelayed(() -> Tools.swapFragment(requireActivity(),
+                TestLauncherHomeFragment.class, TestLauncherHomeFragment.TAG, null), 220);
     }
 }
