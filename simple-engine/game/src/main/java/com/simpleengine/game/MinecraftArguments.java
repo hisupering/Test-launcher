@@ -16,7 +16,7 @@ public final class MinecraftArguments {
         if (value == null) return null;
         String result = value;
         for (Map.Entry<String, String> entry : values.entrySet()) {
-            result = result.replace(" + entry.getKey() + ", entry.getValue());
+            result = result.replace("${" + entry.getKey() + "}", entry.getValue());
         }
         return result;
     }
