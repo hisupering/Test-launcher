@@ -33,6 +33,22 @@ jobs:
           echo "ANDROID_NDK_ROOT=$ANDROID_SDK_ROOT/ndk/27.3.13750724" >> "$GITHUB_ENV"
           echo "ANDROID_NDK=$ANDROID_SDK_ROOT/ndk/27.3.13750724" >> "$GITHUB_ENV"
 
+      - name: Build Android LWJGL bridge (arm64)
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y ant
+          git clone --depth 1 --branch wip/rebase_3.3.3 https://github.com/AngelAuraMC/lwjgl3.git .ci-lwjgl
+          export JAVA8_HOME="${JAVA_HOME_8_X64:-$JAVA_HOME}"
+          export ANDROID_NDK_HOME="$ANDROID_SDK_ROOT/ndk/27.3.13750724"
+          export LWJGL_BUILD_ARCH=arm64
+          cd .ci-lwjgl
+          bash ci_build_android.bash
+          cd ..
+          rm -rf simple-engine/launcher-app/src/main/assets/simple-lwjgl
+          mkdir -p simple-engine/launcher-app/src/main/assets/simple-lwjgl/arm64/jars
+          mkdir -p simple-engine/launcher-app/src/main/assets/simple-lwjgl/arm64/natives
+          find .ci-lwjgl/bin/RELEASE -type f -name '*.jar' -exec cp {} simple-engine/launcher-app/src/main/assets/simple-lwjgl/arm64/jars/ \;
+          find .ci-lwjgl/bin/out -type f -name '*.so' -exec cp {} simple-engine/launcher-app/src/main/assets/simple-lwjgl/arm64/natives/ \;
       - name: Build independent Simple Engine
         working-directory: simple-engine
         run: |
