@@ -1,2 +1,8 @@
+pluginManagement {
+    repositories { google(); mavenCentral(); gradlePluginPortal() }
+    plugins {
+        id 'com.android.library' version '8.6.1'
+    }
+}
 rootProject.name = "simple-engine"
 include(":core", ":runtime", ":game", ":android")
