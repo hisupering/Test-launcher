@@ -4,7 +4,10 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
-import android.widget.Button;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.Animation;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -26,17 +29,32 @@ public class TestLauncherHomeFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        Button play = view.findViewById(R.id.test_play);
-        Button account = view.findViewById(R.id.test_account);
-        Button versions = view.findViewById(R.id.test_versions);
-        Button downloads = view.findViewById(R.id.test_downloads);
-        Button mods = view.findViewById(R.id.test_mods);
-        Button settings = view.findViewById(R.id.test_settings);
-        Button controls = view.findViewById(R.id.test_controls);
-        Button worlds = view.findViewById(R.id.test_worlds);
-        Button packs = view.findViewById(R.id.test_resourcepacks);
+        if (!Tools.hasOnlineProfile()) {
+            Tools.swapFragment(requireActivity(), SelectAuthFragment.class, SelectAuthFragment.TAG, null);
+            return;
+        }
 
-        play.setOnClickListener(v -> ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true));
+        bind(view);
+        animateIn(view);
+    }
+
+    private void bind(View view) {
+        View play = view.findViewById(R.id.test_play);
+        View account = view.findViewById(R.id.test_account_card);
+        View versions = view.findViewById(R.id.test_versions);
+        View downloads = view.findViewById(R.id.test_downloads);
+        View mods = view.findViewById(R.id.test_mods);
+        View settings = view.findViewById(R.id.test_settings);
+        View controls = view.findViewById(R.id.test_controls);
+        View worlds = view.findViewById(R.id.test_worlds);
+
+        play.setOnClickListener(v -> {
+            if (!Tools.hasOnlineProfile()) {
+                Tools.swapFragment(requireActivity(), SelectAuthFragment.class, SelectAuthFragment.TAG, null);
+                return;
+            }
+            ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true);
+        });
 
         account.setOnClickListener(v ->
                 Tools.swapFragment(requireActivity(), SelectAuthFragment.class, SelectAuthFragment.TAG, null));
@@ -46,8 +64,6 @@ public class TestLauncherHomeFragment extends Fragment {
 
         downloads.setOnClickListener(v -> openFolder());
         worlds.setOnClickListener(v -> openFolder("saves"));
-        packs.setOnClickListener(v -> openFolder("resourcepacks"));
-
         mods.setOnClickListener(v -> openUrl("https://modrinth.com/mods"));
         settings.setOnClickListener(v -> Tools.swapFragment(
                 requireActivity(),
@@ -57,6 +73,12 @@ public class TestLauncherHomeFragment extends Fragment {
         ));
         controls.setOnClickListener(v ->
                 startActivity(new Intent(requireContext(), net.kdt.pojavlaunch.CustomControlsActivity.class)));
+    }
+
+    private void animateIn(View root) {
+        Animation fade = new AlphaAnimation(0f, 1f);
+        fade.setDuration(220);
+        root.startAnimation(fade);
     }
 
     private void openFolder() {
