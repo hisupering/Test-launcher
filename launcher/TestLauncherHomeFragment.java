@@ -18,7 +18,6 @@ import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.extra.ExtraConstants;
 import net.kdt.pojavlaunch.extra.ExtraCore;
 import net.kdt.pojavlaunch.fragments.MainMenuFragment;
-import net.kdt.pojavlaunch.fragments.SelectAuthFragment;
 import net.kdt.pojavlaunch.PojavProfile;
 import net.kdt.pojavlaunch.value.MinecraftAccount;
 
@@ -32,7 +31,7 @@ public class TestLauncherHomeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         if (PojavProfile.getCurrentProfileContent(requireContext(), null) == null) {
-            Tools.swapFragment(requireActivity(), SelectAuthFragment.class, SelectAuthFragment.TAG, null);
+            Tools.swapFragment(requireActivity(), TestSelectAuthFragment.class, TestSelectAuthFragment.TAG, null);
             return;
         }
 
