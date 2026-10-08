@@ -3,6 +3,7 @@ package com.simpleengine.android;
 import com.simpleengine.core.EngineRuntime;
 import com.simpleengine.core.EngineSession;
 import com.simpleengine.runtime.JavaRuntime;
+import com.simpleengine.runtime.AndroidRuntimeInstaller;
 import java.io.File;
 import java.util.UUID;
 
@@ -26,6 +27,10 @@ public final class SimpleEngineBridge {
 
     public boolean hasJavaRuntime(String abi) {
         return JavaRuntime.isUsable(JavaRuntime.resolve(root, abi));
+    }
+
+    public File ensureJavaRuntime() throws Exception {
+        return AndroidRuntimeInstaller.ensure(root);
     }
 
     public void stop() {
