@@ -1,2 +1,6 @@
 plugins { id 'java-library' }
-dependencies { api project(':core') }
+
+dependencies {
+    api project(':core')
+    implementation 'com.google.code.gson:gson:2.13.2'
+}
