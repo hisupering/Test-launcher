@@ -35,10 +35,11 @@ jobs:
       - name: Publish Simple Engine libraries
         uses: actions/upload-artifact@v4
         with:
-          name: Simple-Engine-${{ github.run_number }}
+          name: Simple-Engine-APK-${{ github.run_number }}
           path: |
             simple-engine/core/build/libs/*.jar
             simple-engine/runtime/build/libs/*.jar
             simple-engine/game/build/libs/*.jar
             simple-engine/android/build/outputs/aar/*.aar
+            simple-engine/launcher-app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
