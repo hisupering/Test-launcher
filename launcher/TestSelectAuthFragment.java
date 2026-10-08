@@ -12,7 +12,7 @@ import androidx.fragment.app.Fragment;
 
 import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.Tools;
-import net.kdt.pojavlaunch.fragments.LocalLoginFragment;
+import net.kdt.pojavlaunch.launcher.TestLocalLoginFragment;
 import net.kdt.pojavlaunch.fragments.MicrosoftLoginFragment;
 
 public class TestSelectAuthFragment extends Fragment {
@@ -31,7 +31,7 @@ public class TestSelectAuthFragment extends Fragment {
                 Tools.swapFragment(requireActivity(), MicrosoftLoginFragment.class, MicrosoftLoginFragment.TAG, null));
 
         local.setOnClickListener(v ->
-                Tools.swapFragment(requireActivity(), LocalLoginFragment.class, LocalLoginFragment.TAG, null));
+                Tools.swapFragment(requireActivity(), TestLocalLoginFragment.class, TestLocalLoginFragment.TAG, null));
 
         AlphaAnimation a = new AlphaAnimation(0f, 1f);
         a.setDuration(220);
