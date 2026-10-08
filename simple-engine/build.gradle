@@ -6,15 +6,34 @@ allprojects {
     repositories { google(); mavenCentral() }
 }
 
-subprojects {
-    if (name != 'android') {
-        apply plugin: 'java-library'
-        java {
-            sourceCompatibility = JavaVersion.VERSION_17
-            targetCompatibility = JavaVersion.VERSION_17
-        }
+// Only the platform-independent engine modules are Java libraries.
+// Android and launcher-app are Android modules and must not receive the
+// java-library plugin from the root project.
+project(':core') {
+    apply plugin: 'java-library'
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 }
 
-project(':runtime') { dependencies { api project(':core') } }
-project(':game') { dependencies { api project(':core'); implementation 'com.google.code.gson:gson:2.13.2' } }
+project(':runtime') {
+    apply plugin: 'java-library'
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    dependencies { api project(':core') }
+}
+
+project(':game') {
+    apply plugin: 'java-library'
+    java {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    dependencies {
+        api project(':core')
+        implementation 'com.google.code.gson:gson:2.13.2'
+    }
+}
