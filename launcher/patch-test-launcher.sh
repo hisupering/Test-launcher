@@ -115,7 +115,14 @@ if 'net.kdt.pojavlaunch.value.MinecraftAccount;' not in s:
         'import net.kdt.pojavlaunch.value.launcherprofiles.LauncherProfiles;'
     )
 
-old = '''        if(mAccountSpinner.getSelectedAccount() == null){
+old = '''        // Simple Launcher can create a local account after the account spinner
+        // has already been initialized. Prefer the persisted current profile when
+        // the spinner has a stale null selection.
+        MinecraftAccount selectedAccount = mAccountSpinner.getSelectedAccount();
+        if (selectedAccount == null) {
+            selectedAccount = PojavProfile.getCurrentProfileContent(this, null);
+        }
+        if (selectedAccount == null) {
             Toast.makeText(this, R.string.no_saved_accounts, Toast.LENGTH_LONG).show();
             ExtraCore.setValue(ExtraConstants.SELECT_AUTH_METHOD, true);
             return false;
@@ -138,8 +145,8 @@ new = '''        // The custom Simple Launcher account screen can create a Local
 
         // Override whatever version is in use and replace it with lwjgl3ify if needed'''
 s=s.replace(old,new)
-s=s.replace('mAccountSpinner.getSelectedAccount().isLocal()', 'selectedAccount.isLocal()')
-s=s.replace('mAccountSpinner.getSelectedAccount().isDemo()', 'selectedAccount.isDemo()')
+s=s.replace('selectedAccount.isLocal()', 'selectedAccount.isLocal()')
+s=s.replace('selectedAccount.isDemo()', 'selectedAccount.isDemo()')
 p.write_text(s)
 PY
 
