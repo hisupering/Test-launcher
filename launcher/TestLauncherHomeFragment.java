@@ -60,7 +60,7 @@ public class TestLauncherHomeFragment extends Fragment {
     }
 
     private void openFolder() {
-        Tools.openPath(requireContext(), Tools.DIR_GAME_NEW, false);
+        Tools.openPath(requireContext(), new java.io.File(Tools.DIR_GAME_NEW), false);
     }
 
     private void openFolder(String child) {
