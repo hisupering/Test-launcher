@@ -53,6 +53,7 @@ public final class MinecraftLaunchController {
                 MinecraftArgumentResolver.resolve(install.version.jvmArguments, context));
         jvm.add("-Xmx" + Math.max(512, ramMb) + "M");
         jvm.addAll(MinecraftLwjgl.jvmNativeProperties(context.nativesDirectory));
+        jvm.add("-Dsimple.native.path=" + context.nativesDirectory.getAbsolutePath());
 
         List<String> game = MinecraftArgumentResolver.resolve(install.version.gameArguments, context);
         List<String> commandArgs = new ArrayList<>();
