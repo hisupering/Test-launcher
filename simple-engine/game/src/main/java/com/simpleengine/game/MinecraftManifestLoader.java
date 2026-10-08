@@ -1,8 +1,11 @@
 package com.simpleengine.game;
 
+import com.google.gson.*;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class MinecraftManifestLoader {
     private MinecraftManifestLoader() {}
@@ -13,25 +16,26 @@ public final class MinecraftManifestLoader {
         }
     }
 
-    /*
-     * Minimal dependency-free extraction for the top-level latest IDs.
-     * Full version-object parsing is implemented behind the resolver API next.
-     */
     public static MinecraftManifest parse(String json) {
         if (json == null || json.isEmpty()) throw new IllegalArgumentException("json");
-        String release = extractLatest(json, "release");
-        String snapshot = extractLatest(json, "snapshot");
-        return new MinecraftManifest(release, snapshot, java.util.Collections.emptyList());
+        JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+        JsonObject latest = root.getAsJsonObject("latest");
+        String release = latest == null ? null : str(latest,"release");
+        String snapshot = latest == null ? null : str(latest,"snapshot");
+        List<MinecraftVersion> versions = new ArrayList<>();
+        JsonArray list = root.getAsJsonArray("versions");
+        if (list != null) for (JsonElement e : list) {
+            JsonObject v=e.getAsJsonObject();
+            String id=str(v,"id"), type=str(v,"type"), url=str(v,"url"), sha1=str(v,"sha1");
+            if(id!=null) {
+                try { versions.add(new MinecraftVersion(id,type,url==null?null:url,sha1,null)); }
+                catch(Exception ignored) {}
+            }
+        }
+        return new MinecraftManifest(release,snapshot,versions);
     }
 
-    private static String extractLatest(String json, String key) {
-        String marker = "\""+key+"\"";
-        int keyPos = json.indexOf(marker);
-        if (keyPos < 0) return null;
-        int colon = json.indexOf(':', keyPos + marker.length());
-        if (colon < 0) return null;
-        int first = json.indexOf('"', colon + 1);
-        int second = first < 0 ? -1 : json.indexOf('"', first + 1);
-        return first >= 0 && second > first ? json.substring(first + 1, second) : null;
+    private static String str(JsonObject o,String k) {
+        return o!=null&&o.has(k)&&!o.get(k).isJsonNull()?o.get(k).getAsString():null;
     }
 }
