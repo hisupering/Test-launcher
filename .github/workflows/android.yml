@@ -36,15 +36,31 @@ jobs:
           name: jre8-pojav
           path: engine/app_pojavlauncher/src/main/assets/components/jre
 
-      # Java 17/21/25 are intentionally not downloaded yet.
-      # The upstream Amethyst build currently enables only JRE8 by default.
-      # We will add verified runtime artifacts one-by-one after the base APK build is green.
+      - name: Download Java 17 21 and 25 runtimes
+        run: |
+          set -e
+          BASE="https://github.com/AngelAuraMC/angelauramc-openjdk-build/releases/download/download"
+          mkdir -p engine/app_pojavlauncher/src/main/assets/components/jre-new
+          mkdir -p engine/app_pojavlauncher/src/main/assets/components/jre-21
+          mkdir -p engine/app_pojavlauncher/src/main/assets/components/jre-25
+          for arch in arm arm64 x86 x86_64; do
+            curl -fL --retry 3 -o "engine/app_pojavlauncher/src/main/assets/components/jre-new/jre17-android-${arch}.tar.xz" "$BASE/jre17-android-${arch}.tar.xz"
+            curl -fL --retry 3 -o "engine/app_pojavlauncher/src/main/assets/components/jre-21/jre21-android-${arch}.tar.xz" "$BASE/jre21-android-${arch}.tar.xz"
+          done
+          for arch in arm arm64; do
+            curl -fL --retry 3 -o "engine/app_pojavlauncher/src/main/assets/components/jre-25/jre25-android-${arch}.tar.xz" "$BASE/jre25-android-${arch}.tar.xz"
+          done
 
-      - name: Set up Gradle
+      - name: Install exact Android build dependencies
+        run: |
+          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653"
+
+      - name: Set up Gradle from engine wrapper
         uses: gradle/actions/setup-gradle@v4
         with:
           validate-wrappers: false
-          gradle-version: '9.6.1'
 
       - name: Apply Test Launcher product overlay
         run: |
@@ -54,7 +70,7 @@ jobs:
       - name: Build real Android APK
         working-directory: engine
         run: |
-          ./gradlew :app_pojavlauncher:assembleDebug --no-daemon
+          ./gradlew :app_pojavlauncher:assembleDebug --no-daemon --stacktrace
 
       - name: Publish APK
         uses: actions/upload-artifact@v4
