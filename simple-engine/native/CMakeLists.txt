@@ -1,0 +1,6 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(simpleengine)
+add_library(simpleengine SHARED src/main/cpp/simpleengine_jni.cpp)
+find_library(log_lib log)
+find_library(android_lib android)
+target_link_libraries(simpleengine ${log_lib} ${android_lib})
