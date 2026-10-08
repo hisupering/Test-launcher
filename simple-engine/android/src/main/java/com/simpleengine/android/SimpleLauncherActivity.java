@@ -272,6 +272,7 @@ public final class SimpleLauncherActivity extends Activity {
                     "0",
                     "legacy",
                     install.version.type == null ? "release" : install.version.type,
+                    install.version.id,
                     gameDir,
                     assetsDir,
                     install.version.assetIndexId,
