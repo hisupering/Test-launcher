@@ -5,6 +5,9 @@ on:
   push:
     branches: [ main ]
 
+permissions:
+  contents: write
+
 jobs:
   build-debug:
     runs-on: ubuntu-22.04
@@ -78,3 +81,11 @@ jobs:
           name: Test-Launcher-debug
           path: engine/app_pojavlauncher/build/outputs/apk/debug/*.apk
           if-no-files-found: error
+
+      - name: Publish direct APK release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: simple-launcher-${{ github.run_number }}
+          name: Simple Launcher ${{ github.run_number }}
+          generate_release_notes: true
+          files: engine/app_pojavlauncher/build/outputs/apk/debug/*.apk
