@@ -31,7 +31,7 @@ public class TestLauncherHomeFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         if (PojavProfile.getCurrentProfileContent(requireContext(), null) == null) {
-            Tools.swapFragment(requireActivity(), TestSelectAuthFragment.class, TestSelectAuthFragment.TAG, null);
+            Tools.swapFragment(requireActivity(), TestTestSelectAuthFragment.class, TestTestSelectAuthFragment.TAG, null);
             return;
         }
 
@@ -58,14 +58,14 @@ public class TestLauncherHomeFragment extends Fragment {
             // Tools.hasOnlineProfile() only recognizes authenticated online accounts,
             // so using it here incorrectly blocked Local Account from launching.
             if (PojavProfile.getCurrentProfileContent(requireContext(), null) == null) {
-                Tools.swapFragment(requireActivity(), SelectAuthFragment.class, SelectAuthFragment.TAG, null);
+                Tools.swapFragment(requireActivity(), TestSelectAuthFragment.class, TestSelectAuthFragment.TAG, null);
                 return;
             }
             ExtraCore.setValue(ExtraConstants.LAUNCH_GAME, true);
         });
 
         account.setOnClickListener(v ->
-                Tools.swapFragment(requireActivity(), SelectAuthFragment.class, SelectAuthFragment.TAG, null));
+                Tools.swapFragment(requireActivity(), TestSelectAuthFragment.class, TestSelectAuthFragment.TAG, null));
 
         versions.setOnClickListener(v ->
                 Tools.swapFragment(requireActivity(), MainMenuFragment.class, MainMenuFragment.TAG, null));
