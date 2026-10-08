@@ -10,25 +10,31 @@ public final class MinecraftCommandBuilder {
     public static List<String> build(
             File javaExecutable,
             MinecraftLaunchPlan plan,
-            String username) {
+            String username,
+            String version) {
 
         if (javaExecutable == null) throw new IllegalArgumentException("javaExecutable");
-        if (plan == null) throw new IllegalArgumentException("plan");
+        MinecraftLaunchValidator.validate(plan);
 
         List<String> command = new ArrayList<>();
         command.add(javaExecutable.getAbsolutePath());
         command.addAll(plan.jvmArguments);
-
         command.add("-cp");
         command.add(plan.classpath.asString());
-
         command.add(plan.mainClass);
+
+        MinecraftArguments variables = MinecraftCommandLine.defaults(
+                username,
+                plan.gameDirectory,
+                version,
+                plan.classpath.asString());
+
         command.add("--username");
         command.add(username == null || username.isEmpty() ? "Player" : username);
         command.add("--gameDir");
         command.add(plan.gameDirectory.getAbsolutePath());
-        command.addAll(plan.gameArguments);
 
+        command.addAll(MinecraftCommandLine.resolve(plan.gameArguments, variables));
         return command;
     }
 }
