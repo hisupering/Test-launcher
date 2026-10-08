@@ -56,10 +56,10 @@ public final class SimpleLauncherActivity extends Activity {
         info.setTextSize(17); root.addView(info);
         TextView themeLabel = new TextView(this); themeLabel.setText("Theme"); root.addView(themeLabel);
         RadioGroup theme = new RadioGroup(this);
-        RadioButton dark = new RadioButton(this); dark.setText("Dark"); dark.setId(1);
-        RadioButton light = new RadioButton(this); light.setText("Light"); light.setId(2);
+        RadioButton dark = new RadioButton(this); dark.setText("Dark"); dark.setId(android.view.View.generateViewId());
+        RadioButton light = new RadioButton(this); light.setText("Light"); light.setId(android.view.View.generateViewId());
         theme.addView(dark); theme.addView(light);
-        theme.check(prefs.getBoolean("dark",true)?1:2); root.addView(theme);
+        theme.check(prefs.getBoolean("dark",true)?dark.getId():light.getId()); root.addView(theme);
         TextView ram = new TextView(this); ram.setText("RAM بازی: "+prefs.getInt("ram_mb",1024)+" MB"); root.addView(ram);
         SeekBar bar = new SeekBar(this); bar.setMax(16);
         bar.setProgress(Math.max(0,Math.min(16,(prefs.getInt("ram_mb",1024)-512)/256)));
@@ -72,7 +72,7 @@ public final class SimpleLauncherActivity extends Activity {
         name.setHint("Player name"); name.setText(prefs.getString("username","Player")); root.addView(name);
         Button next = button("Next");
         next.setOnClickListener(v->{
-            prefs.edit().putBoolean("dark",theme.getCheckedRadioButtonId()==1)
+            prefs.edit().putBoolean("dark",theme.getCheckedRadioButtonId()==dark.getId())
                 .putInt("ram_mb",512+bar.getProgress()*256)
                 .putString("username",cleanName(name.getText().toString())).apply();
             showAccount();
