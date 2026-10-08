@@ -3,12 +3,6 @@ package com.simpleengine.game;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public final class MinecraftManifestLoader {
     private MinecraftManifestLoader() {}
@@ -20,29 +14,24 @@ public final class MinecraftManifestLoader {
     }
 
     /*
-     * The parser is deliberately kept behind this small API.
-     * The Android module can provide a JSON implementation without
-     * coupling the core engine to a launcher framework.
+     * Minimal dependency-free extraction for the top-level latest IDs.
+     * Full version-object parsing is implemented behind the resolver API next.
      */
     public static MinecraftManifest parse(String json) {
         if (json == null || json.isEmpty()) throw new IllegalArgumentException("json");
-        String release = extract(json, "\"release\"", "\"id\"", 0);
-        String snapshot = extract(json, "\"snapshot\"", "\"id\"", 0);
-        return new MinecraftManifest(
-                release,
-                snapshot,
-                new ArrayList<>()
-        );
+        String release = extractLatest(json, "release");
+        String snapshot = extractLatest(json, "snapshot");
+        return new MinecraftManifest(release, snapshot, java.util.Collections.emptyList());
     }
 
-    private static String extract(String json, String key, String nestedKey, int from) {
-        int keyPos = json.indexOf(key, from);
+    private static String extractLatest(String json, String key) {
+        String marker = "\""+key+"\"";
+        int keyPos = json.indexOf(marker);
         if (keyPos < 0) return null;
-        int idPos = json.indexOf(nestedKey, keyPos);
-        if (idPos < 0) return null;
-        int colon = json.indexOf(':', idPos);
+        int colon = json.indexOf(':', keyPos + marker.length());
+        if (colon < 0) return null;
         int first = json.indexOf('"', colon + 1);
-        int second = json.indexOf('"', first + 1);
+        int second = first < 0 ? -1 : json.indexOf('"', first + 1);
         return first >= 0 && second > first ? json.substring(first + 1, second) : null;
     }
 }
