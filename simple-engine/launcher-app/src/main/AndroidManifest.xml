@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
- <application android:theme="@android:style/Theme.Material.NoActionBar" android:label="Simple Launcher">
+ <uses-permission android:name="android.permission.INTERNET"/>
+ <application android:theme="@android:style/Theme.Material.NoActionBar" android:label="Simple Launcher" android:usesCleartextTraffic="false">
   <activity android:name="com.simpleengine.android.SimpleLauncherActivity" android:exported="true">
    <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
   </activity>
