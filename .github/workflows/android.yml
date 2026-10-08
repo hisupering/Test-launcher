@@ -36,46 +36,15 @@ jobs:
           name: jre8-pojav
           path: engine/app_pojavlauncher/src/main/assets/components/jre
 
-      - name: Get Java 17 runtime for Android
-        uses: dawidd6/action-download-artifact@v9
-        with:
-          workflow: build.yml
-          workflow_conclusion: completed
-          repo: AngelAuraMC/angelauramc-openjdk-build
-          branch: buildjre17-21
-          name: jre17-pojav
-          path: engine/app_pojavlauncher/src/main/assets/components/jre-new
+      # Java 17/21/25 are intentionally not downloaded yet.
+      # The upstream Amethyst build currently enables only JRE8 by default.
+      # We will add verified runtime artifacts one-by-one after the base APK build is green.
 
-      - name: Get Java 21 runtime for Android
-        uses: dawidd6/action-download-artifact@v9
-        with:
-          workflow: build.yml
-          workflow_conclusion: completed
-          repo: AngelAuraMC/angelauramc-openjdk-build
-          branch: buildjre17-21
-          name: jre21-pojav
-          path: engine/app_pojavlauncher/src/main/assets/components/jre-21
-
-      - name: Get Java 25 runtime for Android
-        uses: dawidd6/action-download-artifact@v9
-        with:
-          workflow: build.yml
-          workflow_conclusion: completed
-          repo: FCL-Team/Android-OpenJDK-Build
-          branch: Build_JRE_25
-          name: jre25-multiarch
-          path: engine/app_pojavlauncher/src/main/assets/components/jre-25
-
-      - name: Install exact Android build dependencies
-        run: |
-          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653"
-
-      - name: Set up Gradle from engine wrapper
+      - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           validate-wrappers: false
+          gradle-version: '9.6.1'
 
       - name: Apply Test Launcher product overlay
         run: |
@@ -85,7 +54,7 @@ jobs:
       - name: Build real Android APK
         working-directory: engine
         run: |
-          ./gradlew :app_pojavlauncher:assembleDebug --no-daemon --stacktrace
+          ./gradlew :app_pojavlauncher:assembleDebug --no-daemon
 
       - name: Publish APK
         uses: actions/upload-artifact@v4
