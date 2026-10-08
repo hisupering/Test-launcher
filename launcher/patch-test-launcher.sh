@@ -88,6 +88,9 @@ if (selectedAccount == null) {
 p.write_text(s)
 PY
 
+python3 - "$PKG/LauncherActivity.java" <<'PY'
+from pathlib import Path
+p = Path(__import__("sys").argv[1])
 s = p.read_text()
 
 if 'net.kdt.pojavlaunch.launcher.TestLauncherHomeFragment' not in s:
