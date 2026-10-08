@@ -23,3 +23,6 @@ The engine is being built incrementally. The first milestone is a clean, indepen
 - `native/` - future JNI/LWJGL/OpenGL/audio/input bridge
 
 No PojavLauncher or Amethyst source is required by this module.
+
+
+CI verification marker: Android LWJGL bridge build.
