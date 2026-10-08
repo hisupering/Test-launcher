@@ -230,7 +230,7 @@ public final class SimpleLauncherActivity extends Activity {
         worker.execute(() -> {
             try {
                 runOnUiThread(() -> status.setText("Installing Android Java 21 runtime..."));
-                File java = engine.ensureJavaRuntime();
+                File javaExecutable = engine.ensureJavaRuntime();
                 runOnUiThread(() -> { progress.setProgress(25); status.setText("Preparing Minecraft " + version + "..."); });
 
                 File versionJson = new File(engine.getRoot(),"versions/" + version + "/" + version + ".json");
@@ -258,7 +258,7 @@ public final class SimpleLauncherActivity extends Activity {
 
                 runOnUiThread(() -> { progress.setProgress(70); status.setText("Starting Simple Engine JVM..."); });
 
-                Map<String,String> features = new HashMap<>();
+                Map<String,Boolean> features = new HashMap<>();
                 features.put("has_custom_resolution", false);
                 features.put("is_demo_user", false);
                 features.put("has_quick_plays_support", false);
@@ -293,7 +293,7 @@ public final class SimpleLauncherActivity extends Activity {
                     }
                 });
 
-                launchController.launch(java, install, gameDir, ctx, prefs.getInt("ram_mb",1024), lwjgl.jars);
+                launchController.launch(javaExecutable, install, gameDir, ctx, prefs.getInt("ram_mb",1024), lwjgl.jars);
                 runOnUiThread(() -> { progress.setProgress(100); status.setText("Minecraft JVM started.\nIf the game closes, open the log/error shown here."); });
             } catch(Throwable e) {
                 runOnUiThread(() -> status.setText("Launch failed: " + e));
