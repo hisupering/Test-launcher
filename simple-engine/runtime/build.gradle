@@ -1,2 +1,5 @@
 plugins { id 'java-library' }
-dependencies { api project(':core') }
+dependencies {
+    api project(':core')
+    implementation 'org.apache.commons:commons-compress:1.28.0'
+}
