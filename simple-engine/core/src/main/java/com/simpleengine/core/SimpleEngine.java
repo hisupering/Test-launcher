@@ -14,8 +14,12 @@ public final class SimpleEngine {
     public synchronized void launch(EngineConfig config) {
         if (process != null && process.isAlive()) throw new IllegalStateException("Simple Engine is already running");
         setState(EngineState.PREPARING);
-        if (config == null || config.javaExecutable == null || !config.javaExecutable.isFile()) { fail(new IllegalStateException("Java runtime not found")); return; }
-        if (!config.gameDirectory.exists() && !config.gameDirectory.mkdirs()) { fail(new IllegalStateException("Cannot create game directory")); return; }
+        if (config == null || config.javaExecutable == null || !config.javaExecutable.isFile()) {
+            fail(new IllegalStateException("Java runtime not found")); return;
+        }
+        if (!config.gameDirectory.exists() && !config.gameDirectory.mkdirs()) {
+            fail(new IllegalStateException("Cannot create game directory")); return;
+        }
 
         List<String> command = new ArrayList<>();
         command.add(config.javaExecutable.getAbsolutePath());
@@ -31,6 +35,12 @@ public final class SimpleEngine {
             ProcessBuilder builder = new ProcessBuilder(command);
             builder.directory(config.gameDirectory);
             builder.redirectErrorStream(true);
+            String nativePath = findProperty(config.jvmArguments, "-Dsimple.native.path=");
+            if (nativePath != null && !nativePath.isEmpty()) {
+                String old = builder.environment().get("LD_LIBRARY_PATH");
+                builder.environment().put("LD_LIBRARY_PATH",
+                        old == null || old.isEmpty() ? nativePath : nativePath + File.pathSeparator + old);
+            }
             process = builder.start();
             final Process started = process;
             Thread output = new Thread(() -> readOutput(started), "simple-engine-output");
@@ -39,6 +49,12 @@ public final class SimpleEngine {
             waiter.setDaemon(true); waiter.start();
             setState(EngineState.RUNNING);
         } catch (Throwable t) { fail(t); }
+    }
+
+    private static String findProperty(List<String> args, String prefix) {
+        if (args == null) return null;
+        for (String arg : args) if (arg != null && arg.startsWith(prefix)) return arg.substring(prefix.length());
+        return null;
     }
 
     private void waitFor(Process p) {
@@ -58,7 +74,8 @@ public final class SimpleEngine {
         if (p == null || !p.isAlive()) return;
         setState(EngineState.STOPPING);
         p.destroy();
-        try { if (!p.waitFor(2, java.util.concurrent.TimeUnit.SECONDS)) p.destroyForcibly(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+        try { if (!p.waitFor(2, java.util.concurrent.TimeUnit.SECONDS)) p.destroyForcibly(); }
+        catch (InterruptedException e) { Thread.currentThread().interrupt(); }
         process = null;
         setState(EngineState.STOPPED);
     }
