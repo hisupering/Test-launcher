@@ -36,11 +36,18 @@ jobs:
           name: jre8-pojav
           path: engine/app_pojavlauncher/src/main/assets/components/jre
 
-      - name: Set up Gradle
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android build dependencies
+        run: |
+          sdkmanager "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653"
+          yes | sdkmanager --licenses >/dev/null || true
+
+      - name: Set up Gradle from engine wrapper
         uses: gradle/actions/setup-gradle@v4
         with:
           validate-wrappers: false
-          gradle-version: '9.6.1'
 
       - name: Apply Test Launcher product overlay
         run: |
@@ -50,7 +57,7 @@ jobs:
       - name: Build real Android APK
         working-directory: engine
         run: |
-          gradle :app_pojavlauncher:assembleDebug --no-daemon
+          ./gradlew :app_pojavlauncher:assembleDebug --no-daemon --stacktrace
 
       - name: Publish APK
         uses: actions/upload-artifact@v4
