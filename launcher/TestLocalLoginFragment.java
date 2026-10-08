@@ -60,7 +60,7 @@ public class TestLocalLoginFragment extends Fragment {
         }
 
         ExtraCore.setValue(ExtraConstants.MOJANG_LOGIN_TODO, new String[]{name, ""});
-        Tools.swapFragment(requireActivity(), TestLauncherHomeFragment.class,
-                TestLauncherHomeFragment.TAG, null);
+        view.postDelayed(() -> Tools.swapFragment(requireActivity(), TestLauncherHomeFragment.class,
+                TestLauncherHomeFragment.TAG, null), 450);
     }
 }
