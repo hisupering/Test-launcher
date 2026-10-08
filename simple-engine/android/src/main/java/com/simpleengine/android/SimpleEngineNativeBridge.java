@@ -8,4 +8,6 @@ public final class SimpleEngineNativeBridge{
  public static native void detachSurface();
  public static native void renderFrame();
  public static native void sendTouch(int action,float x,float y,float pressure);
+ public static native boolean initAudio();
+ public static native void shutdownAudio();
 }
