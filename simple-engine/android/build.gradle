@@ -1,18 +1,8 @@
-plugins {
-    id 'com.android.library'
-}
-
+plugins { id 'com.android.library' }
 android {
-    namespace 'com.simplelauncher.engine.android'
-    compileSdk 35
-
-    defaultConfig {
-        minSdk 24
-    }
+ namespace 'com.simplelauncher.engine.android'
+ compileSdk 35
+ defaultConfig { minSdk 24 }
+ externalNativeBuild { cmake { path "../native/CMakeLists.txt"; version "3.22.1" } }
 }
-
-dependencies {
-    api project(':core')
-    api project(':runtime')
-    api project(':game')
-}
+dependencies { api project(':core'); api project(':runtime'); api project(':game') }
