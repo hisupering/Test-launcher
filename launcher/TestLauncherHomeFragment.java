@@ -19,6 +19,8 @@ import net.kdt.pojavlaunch.extra.ExtraConstants;
 import net.kdt.pojavlaunch.extra.ExtraCore;
 import net.kdt.pojavlaunch.fragments.MainMenuFragment;
 import net.kdt.pojavlaunch.fragments.SelectAuthFragment;
+import net.kdt.pojavlaunch.PojavProfile;
+import net.kdt.pojavlaunch.value.MinecraftAccount;
 
 public class TestLauncherHomeFragment extends Fragment {
     public static final String TAG = "TestLauncherHomeFragment";
@@ -29,10 +31,14 @@ public class TestLauncherHomeFragment extends Fragment {
 
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        if (!Tools.hasOnlineProfile()) {
+        if (PojavProfile.getCurrentProfileContent(requireContext(), null) == null) {
             Tools.swapFragment(requireActivity(), SelectAuthFragment.class, SelectAuthFragment.TAG, null);
             return;
         }
+
+        MinecraftAccount account = PojavProfile.getCurrentProfileContent(requireContext(), null);
+        TextView accountState = view.findViewById(R.id.test_account_state);
+        if (accountState != null && account != null) accountState.setText(account.username);
 
         bind(view);
         animateIn(view);
