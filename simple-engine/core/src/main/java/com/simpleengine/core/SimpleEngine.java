@@ -37,9 +37,15 @@ public final class SimpleEngine {
             builder.redirectErrorStream(true);
             String nativePath = findProperty(config.jvmArguments, "-Dsimple.native.path=");
             if (nativePath != null && !nativePath.isEmpty()) {
+                String runtimeBin = config.javaExecutable.getParentFile().getAbsolutePath();
+                File runtimeRoot = config.javaExecutable.getParentFile().getParentFile();
+                String runtimeLib = new File(runtimeRoot, "lib").getAbsolutePath();
+                String runtimeServer = new File(runtimeRoot, "lib/server").getAbsolutePath();
+                String nativeAndRuntime = nativePath + File.pathSeparator + runtimeServer + File.pathSeparator + runtimeLib + File.pathSeparator + runtimeBin;
                 String old = builder.environment().get("LD_LIBRARY_PATH");
                 builder.environment().put("LD_LIBRARY_PATH",
-                        old == null || old.isEmpty() ? nativePath : nativePath + File.pathSeparator + old);
+                        old == null || old.isEmpty() ? nativeAndRuntime : nativeAndRuntime + File.pathSeparator + old);
+                builder.environment().put("PATH", runtimeBin + File.pathSeparator + builder.environment().getOrDefault("PATH", ""));
             }
             process = builder.start();
             final Process started = process;
