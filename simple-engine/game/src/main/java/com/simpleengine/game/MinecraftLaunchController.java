@@ -43,7 +43,7 @@ public final class MinecraftLaunchController {
         }
 
         for (java.nio.file.Path p : install.libraries) {
-            String s = p.toString().replace('\\\\', '/');
+            String s = p.toString().replace('\\', '/');
             if (s.contains("/org/lwjgl/")) continue;
             cp.add(p.toFile());
         }
