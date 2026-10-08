@@ -88,7 +88,6 @@ if (selectedAccount == null) {
 p.write_text(s)
 PY
 
-$marker
 s = p.read_text()
 
 if 'net.kdt.pojavlaunch.launcher.TestLauncherHomeFragment' not in s:
