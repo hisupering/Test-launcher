@@ -13,7 +13,7 @@ public final class MinecraftLaunchContext {
     public MinecraftLaunchContext(String username, String uuid, String accessToken, String userType,
                                   String versionType, File gameDirectory, File assetsDirectory,
                                   String assetIndexName, File nativesDirectory, String launcherName,
-                                  String launcherVersion, Map<String,String> features) {
+                                  String launcherVersion, Map<String,Boolean> features) {
         this(username, uuid, accessToken, userType, versionType, versionType, gameDirectory,
                 assetsDirectory, assetIndexName, nativesDirectory, launcherName, launcherVersion, features);
     }
@@ -21,7 +21,7 @@ public final class MinecraftLaunchContext {
     public MinecraftLaunchContext(String username, String uuid, String accessToken, String userType,
                                   String versionType, String versionName, File gameDirectory,
                                   File assetsDirectory, String assetIndexName, File nativesDirectory,
-                                  String launcherName, String launcherVersion, Map<String,String> features) {
+                                  String launcherName, String launcherVersion, Map<String,Boolean> features) {
         this.username = username == null ? "Player" : username;
         this.uuid = uuid == null ? "00000000-0000-0000-0000-000000000000" : uuid;
         this.accessToken = accessToken == null ? "0" : accessToken;
