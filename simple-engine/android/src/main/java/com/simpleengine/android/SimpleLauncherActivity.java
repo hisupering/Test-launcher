@@ -3,6 +3,7 @@ package com.simpleengine.android;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.Gravity;
+import android.view.View;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.*;
@@ -19,6 +20,7 @@ public final class SimpleLauncherActivity extends Activity {
     private LinearLayout root;
     private TextView status;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
+    private MinecraftLaunchController launchController;
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -205,9 +207,89 @@ public final class SimpleLauncherActivity extends Activity {
 
     private void launchMinecraft() {
         String version=prefs.getString("version","");
-        if(version.isEmpty()){Toast.makeText(this,"First install a Minecraft version.",Toast.LENGTH_LONG).show();return;}
-        Toast.makeText(this,"Simple Engine: preparing Minecraft "+version,Toast.LENGTH_LONG).show();
-        setContentView(new SimpleEngineRenderView(this));
+        if(version.isEmpty()){
+            Toast.makeText(this,"First install a Minecraft version.",Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        base("Launching Minecraft " + version);
+        status = new TextView(this);
+        status.setText("Preparing Java 21 and Minecraft files...\\nEverything stays inside Simple Launcher.");
+        status.setTextSize(16);
+        root.addView(status);
+
+        ProgressBar progress = new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);
+        progress.setMax(100); progress.setProgress(5); root.addView(progress);
+
+        Button back = button("Back");
+        back.setOnClickListener(v -> {
+            if (launchController != null) launchController.stop();
+            showHome();
+        });
+
+        worker.execute(() -> {
+            try {
+                runOnUiThread(() -> status.setText("Installing Android Java 21 runtime..."));
+                File java = engine.ensureJavaRuntime();
+                runOnUiThread(() -> { progress.setProgress(25); status.setText("Preparing Minecraft " + version + "..."); });
+
+                File versionJson = new File(engine.getRoot(),"versions/" + version + "/" + version + ".json");
+                if (!versionJson.isFile()) throw new IllegalStateException("Installed version metadata is missing");
+                String json = java.nio.file.Files.readString(versionJson.toPath());
+
+                File gameDir = new File(engine.getRoot(),"game");
+                File assetsDir = new File(engine.getRoot(),"assets");
+                File nativesDir = new File(engine.getRoot(),"natives/" + version);
+                nativesDir.mkdirs();
+
+                MinecraftInstallResult install = MinecraftInstaller.install(
+                    json,
+                    new File(engine.getRoot(),"versions").toPath(),
+                    new File(engine.getRoot(),"libraries").toPath(),
+                    assetsDir.toPath());
+
+                runOnUiThread(() -> { progress.setProgress(70); status.setText("Starting Simple Engine JVM..."); });
+
+                Map<String,String> features = new HashMap<>();
+                features.put("has_custom_resolution", false);
+                features.put("is_demo_user", false);
+                features.put("has_quick_plays_support", false);
+                features.put("is_quick_play_singleplayer", false);
+                features.put("is_quick_play_multiplayer", false);
+                features.put("is_quick_play_realms", false);
+
+                MinecraftLaunchContext ctx = new MinecraftLaunchContext(
+                    cleanName(prefs.getString("username","Player")),
+                    "00000000-0000-0000-0000-000000000001",
+                    "0",
+                    "legacy",
+                    install.version.type == null ? "release" : install.version.type,
+                    gameDir,
+                    assetsDir,
+                    install.version.assetIndexId,
+                    nativesDir,
+                    "Simple Launcher",
+                    "0.1.0",
+                    features);
+
+                launchController = new MinecraftLaunchController(new com.simpleengine.core.EngineListener() {
+                    public void onStateChanged(com.simpleengine.core.EngineState state) {
+                        runOnUiThread(() -> status.setText("Minecraft JVM: " + state));
+                    }
+                    public void onLog(String line) {
+                        runOnUiThread(() -> status.setText("Minecraft: " + line));
+                    }
+                    public void onError(Throwable error) {
+                        runOnUiThread(() -> status.setText("Minecraft error: " + error));
+                    }
+                });
+
+                launchController.launch(java, install, gameDir, ctx, prefs.getInt("ram_mb",1024));
+                runOnUiThread(() -> { progress.setProgress(100); status.setText("Minecraft JVM started.\nIf the game closes, open the log/error shown here."); });
+            } catch(Throwable e) {
+                runOnUiThread(() -> status.setText("Launch failed: " + e));
+            }
+        });
     }
 
     @Override protected void onDestroy(){worker.shutdownNow();if(engine!=null)engine.stop();super.onDestroy();}
