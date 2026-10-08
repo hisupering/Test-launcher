@@ -68,6 +68,19 @@ new_root = '''.add(R.id.container_fragment,
 s = s.replace(old_root, new_root)
 p.write_text(s)
 PY
+python3 - "$PKG/tasks/MinecraftDownloader.java" <<'PY'
+from pathlib import Path
+p = Path(__import__("sys").argv[1])
+s = p.read_text()
+# Local accounts are offline identities, but Mojang's public version metadata,
+# libraries, assets and client jars can still be downloaded over HTTPS.
+# The old launcher treated every local profile as "do not download" and then
+# showed "Please try again on your Microsoft Account" when a version was absent.
+# Only the lack of network should take the no-download path.
+s = s.replace('if(isLocalProfile || !isOnline) {', 'if(!isOnline) {')
+p.write_text(s)
+PY
+
 python3 - "$PKG/Tools.java" <<'PY'
 from pathlib import Path
 p = Path(__import__("sys").argv[1])
