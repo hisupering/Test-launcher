@@ -56,8 +56,8 @@ public final class SimpleLauncherActivity extends Activity {
         info.setTextSize(17); root.addView(info);
         TextView themeLabel = new TextView(this); themeLabel.setText("Theme"); root.addView(themeLabel);
         RadioGroup theme = new RadioGroup(this);
-        RadioButton dark = new RadioButton(this); dark.setText("Dark"); dark.setId(android.view.View.generateViewId());
-        RadioButton light = new RadioButton(this); light.setText("Light"); light.setId(android.view.View.generateViewId());
+        RadioButton dark = new RadioButton(this); dark.setText("Dark"); dark.setId(View.generateViewId());
+        RadioButton light = new RadioButton(this); light.setText("Light"); light.setId(View.generateViewId());
         theme.addView(dark); theme.addView(light);
         theme.check(prefs.getBoolean("dark",true)?dark.getId():light.getId()); root.addView(theme);
         TextView ram = new TextView(this); ram.setText("RAM بازی: "+prefs.getInt("ram_mb",1024)+" MB"); root.addView(ram);
