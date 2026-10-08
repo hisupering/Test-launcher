@@ -36,6 +36,36 @@ jobs:
           name: jre8-pojav
           path: engine/app_pojavlauncher/src/main/assets/components/jre
 
+      - name: Get Java 17 runtime for Android
+        uses: dawidd6/action-download-artifact@v9
+        with:
+          workflow: build.yml
+          workflow_conclusion: completed
+          repo: AngelAuraMC/angelauramc-openjdk-build
+          branch: buildjre17-21
+          name: jre17-pojav
+          path: engine/app_pojavlauncher/src/main/assets/components/jre-new
+
+      - name: Get Java 21 runtime for Android
+        uses: dawidd6/action-download-artifact@v9
+        with:
+          workflow: build.yml
+          workflow_conclusion: completed
+          repo: AngelAuraMC/angelauramc-openjdk-build
+          branch: buildjre17-21
+          name: jre21-pojav
+          path: engine/app_pojavlauncher/src/main/assets/components/jre-21
+
+      - name: Get Java 25 runtime for Android
+        uses: dawidd6/action-download-artifact@v9
+        with:
+          workflow: build.yml
+          workflow_conclusion: completed
+          repo: FCL-Team/Android-OpenJDK-Build
+          branch: Build_JRE_25
+          name: jre25-multiarch
+          path: engine/app_pojavlauncher/src/main/assets/components/jre-25
+
       - name: Install exact Android build dependencies
         run: |
           SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
