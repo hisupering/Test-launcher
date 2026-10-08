@@ -8,7 +8,7 @@ public final class MinecraftLaunchContext {
     public final String username, uuid, accessToken, userType, versionType, versionName,
             assetIndexName, launcherName, launcherVersion;
     public final File gameDirectory, assetsDirectory, nativesDirectory;
-    public final Map<String,String> features;
+    public final Map<String,Boolean> features;
 
     public MinecraftLaunchContext(String username, String uuid, String accessToken, String userType,
                                   String versionType, File gameDirectory, File assetsDirectory,
