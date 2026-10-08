@@ -241,6 +241,14 @@ public final class SimpleLauncherActivity extends Activity {
                 File assetsDir = new File(engine.getRoot(),"assets");
                 File nativesDir = new File(engine.getRoot(),"natives/" + version);
                 nativesDir.mkdirs();
+                runOnUiThread(() -> status.setText("Preparing Android LWJGL bridge..."));
+                AndroidLwjglInstaller.Bundle lwjgl = AndroidLwjglInstaller.ensure(this, engine.getRoot());
+                for (File nativeFile : Objects.requireNonNull(lwjgl.natives.listFiles((d,n)->n.endsWith(".so")))) {
+                    File target = new File(nativesDir, nativeFile.getName());
+                    java.nio.file.Files.copy(nativeFile.toPath(), target.toPath(),
+                            java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                    target.setExecutable(true, false);
+                }
 
                 MinecraftInstallResult install = MinecraftInstaller.install(
                     json,
@@ -284,7 +292,7 @@ public final class SimpleLauncherActivity extends Activity {
                     }
                 });
 
-                launchController.launch(java, install, gameDir, ctx, prefs.getInt("ram_mb",1024));
+                launchController.launch(java, install, gameDir, ctx, prefs.getInt("ram_mb",1024), lwjgl.jars);
                 runOnUiThread(() -> { progress.setProgress(100); status.setText("Minecraft JVM started.\nIf the game closes, open the log/error shown here."); });
             } catch(Throwable e) {
                 runOnUiThread(() -> status.setText("Launch failed: " + e));
