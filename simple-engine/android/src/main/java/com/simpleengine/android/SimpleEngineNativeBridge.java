@@ -16,7 +16,7 @@ public final class SimpleEngineNativeBridge {
     public static native void detachSurface();
     public static native void renderFrame();
     public static native void sendTouch(int action, int pointerId, float x, float y, float pressure);
-    public static native int pollTouch(int[] out);
+    public static native int pollTouch(int[] meta, float[] values);
     public static native boolean initAudio();
     public static native void shutdownAudio();
 }
