@@ -38,17 +38,34 @@ python3 - "$PKG/LauncherActivity.java" <<'PY'
 from pathlib import Path
 p = Path(__import__("sys").argv[1])
 s = p.read_text()
+
 if 'net.kdt.pojavlaunch.launcher.TestLauncherHomeFragment' not in s:
-    s = s.replace('import net.kdt.pojavlaunch.fragments.MainMenuFragment;',
-                  'import net.kdt.pojavlaunch.fragments.MainMenuFragment;\nimport net.kdt.pojavlaunch.launcher.TestLauncherHomeFragment;
-import net.kdt.pojavlaunch.launcher.TestSelectAuthFragment;')
-s = s.replace('if(!(fragment instanceof MainMenuFragment)) return false;',
-              'if(!(fragment instanceof MainMenuFragment) && !(fragment instanceof TestLauncherHomeFragment) && !(fragment instanceof TestSelectAuthFragment)) return false;')
-s = s.replace('.add(R.id.container_fragment, MainMenuFragment.class, null, "ROOT").commit();',
-              '.add(R.id.container_fragment, TestLauncherHomeFragment.class, null, "ROOT").commit();')
+    s = s.replace(
+        'import net.kdt.pojavlaunch.fragments.MainMenuFragment;',
+        'import net.kdt.pojavlaunch.fragments.MainMenuFragment;\\n'
+        'import net.kdt.pojavlaunch.launcher.TestLauncherHomeFragment;\\n'
+        'import net.kdt.pojavlaunch.launcher.TestSelectAuthFragment;'
+    )
+
+s = s.replace(
+    'if(!(fragment instanceof MainMenuFragment)) return false;',
+    'if(!(fragment instanceof MainMenuFragment) && !(fragment instanceof TestLauncherHomeFragment) && !(fragment instanceof TestSelectAuthFragment)) return false;'
+)
+
+s = s.replace(
+    'Tools.swapFragment(this, SelectAuthFragment.class, SelectAuthFragment.TAG, null);',
+    'Tools.swapFragment(this, TestSelectAuthFragment.class, TestSelectAuthFragment.TAG, null);'
+)
+
+old_root = '.add(R.id.container_fragment, MainMenuFragment.class, null, "ROOT").commit();'
+new_root = '''.add(R.id.container_fragment,
+                        Tools.hasOnlineProfile()
+                                ? TestLauncherHomeFragment.class
+                                : TestSelectAuthFragment.class,
+                        null, "ROOT").commit();'''
+s = s.replace(old_root, new_root)
 p.write_text(s)
 PY
-
 python3 - "$PKG/Tools.java" <<'PY'
 from pathlib import Path
 p = Path(__import__("sys").argv[1])
