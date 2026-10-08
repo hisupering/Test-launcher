@@ -36,10 +36,11 @@ jobs:
           name: jre8-pojav
           path: engine/app_pojavlauncher/src/main/assets/components/jre
 
-      - name: Align engine with runner Android NDK
-        working-directory: engine
+      - name: Install exact Android build dependencies
         run: |
-          grep -RIl '25.2.9519653' . --exclude-dir=.git | xargs -r sed -i 's/25\.2\.9519653/27.3.13750724/g'
+          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653"
 
       - name: Set up Gradle from engine wrapper
         uses: gradle/actions/setup-gradle@v4
