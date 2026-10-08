@@ -3,6 +3,7 @@
 #include <mutex>
 #include <queue>
 #include <cstdint>
+#include <chrono>
 
 extern "C" void simple_engine_gl_start(ANativeWindow*);
 extern "C" void simple_engine_gl_frame();
@@ -26,7 +27,7 @@ extern "C" JNIEXPORT void JNICALL Java_com_simplelauncher_engine_android_SimpleE
 extern "C" JNIEXPORT void JNICALL Java_com_simplelauncher_engine_android_SimpleEngineNativeBridge_sendTouch(JNIEnv*,jclass,jint action,jint pointerId,jfloat x,jfloat y,jfloat pressure) {
     std::lock_guard<std::mutex> lock(g_touchMutex);
     if (g_touchQueue.size() >= 256) g_touchQueue.pop();
-    g_touchQueue.push({action,pointerId,x,y,pressure,(int64_t)clock()});
+    g_touchQueue.push({action,pointerId,x,y,pressure,(int64_t)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count()});
 }
 
 extern "C" JNIEXPORT jint JNICALL Java_com_simplelauncher_engine_android_SimpleEngineNativeBridge_pollTouch(JNIEnv* env,jclass,jintArray out) {
