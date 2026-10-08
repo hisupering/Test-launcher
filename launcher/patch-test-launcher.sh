@@ -44,7 +44,8 @@ if 'net.kdt.pojavlaunch.launcher.TestLauncherHomeFragment' not in s:
         'import net.kdt.pojavlaunch.fragments.MainMenuFragment;',
         'import net.kdt.pojavlaunch.fragments.MainMenuFragment;\n'
         'import net.kdt.pojavlaunch.launcher.TestLauncherHomeFragment;\n'
-        'import net.kdt.pojavlaunch.launcher.TestSelectAuthFragment;'
+        'import net.kdt.pojavlaunch.launcher.TestSelectAuthFragment;\n'
+        'import net.kdt.pojavlaunch.PojavProfile;'
     )
 
 s = s.replace(
@@ -59,7 +60,7 @@ s = s.replace(
 
 old_root = '.add(R.id.container_fragment, MainMenuFragment.class, null, "ROOT").commit();'
 new_root = '''.add(R.id.container_fragment,
-                        Tools.hasOnlineProfile()
+                        PojavProfile.getCurrentProfileContent(this, null) != null
                                 ? TestLauncherHomeFragment.class
                                 : TestSelectAuthFragment.class,
                         null, "ROOT").commit();'''
