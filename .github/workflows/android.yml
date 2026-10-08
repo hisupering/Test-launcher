@@ -1,4 +1,4 @@
-name: Test Launcher Android
+name: Simple Launcher Android
 
 on:
   workflow_dispatch:
@@ -14,15 +14,24 @@ jobs:
     steps:
       - name: Checkout Simple Launcher
         uses: actions/checkout@v4
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
+
+      - name: Install Android build dependencies
+        run: |
+          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0" "ndk;27.2.12479018"
+
       - name: Build independent Simple Engine
         working-directory: simple-engine
         run: |
-          gradle --no-daemon build
+          gradle --no-daemon clean build
+
       - name: Publish Simple Engine libraries
         uses: actions/upload-artifact@v4
         with:
@@ -31,85 +40,5 @@ jobs:
             simple-engine/core/build/libs/*.jar
             simple-engine/runtime/build/libs/*.jar
             simple-engine/game/build/libs/*.jar
+            simple-engine/android/build/outputs/aar/*.aar
           if-no-files-found: error
-
-  build-debug:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout Test Launcher
-        uses: actions/checkout@v4
-
-      - name: Checkout real Minecraft Java engine
-        uses: actions/checkout@v4
-        with:
-          repository: AngelAuraMC/Amethyst-Android
-          ref: v3_openjdk
-          path: engine
-          submodules: recursive
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-
-      - name: Get Java 8 runtime for Android
-        uses: dawidd6/action-download-artifact@v9
-        with:
-          workflow: build.yml
-          workflow_conclusion: completed
-          repo: AngelAuraMC/angelauramc-openjdk-build
-          branch: buildjre8
-          name: jre8-pojav
-          path: engine/app_pojavlauncher/src/main/assets/components/jre
-
-      - name: Download Java 17 21 and 25 runtimes
-        run: |
-          set -e
-          BASE="https://github.com/AngelAuraMC/angelauramc-openjdk-build/releases/download/download"
-          mkdir -p engine/app_pojavlauncher/src/main/assets/components/jre-new
-          mkdir -p engine/app_pojavlauncher/src/main/assets/components/jre-21
-          mkdir -p engine/app_pojavlauncher/src/main/assets/components/jre-25
-          for arch in arm arm64 x86 x86_64; do
-            curl -fL --retry 3 -o "engine/app_pojavlauncher/src/main/assets/components/jre-new/jre17-android-${arch}.tar.xz" "$BASE/jre17-android-${arch}.tar.xz"
-            curl -fL --retry 3 -o "engine/app_pojavlauncher/src/main/assets/components/jre-21/jre21-android-${arch}.tar.xz" "$BASE/jre21-android-${arch}.tar.xz"
-          done
-          for arch in arm arm64; do
-            curl -fL --retry 3 -o "engine/app_pojavlauncher/src/main/assets/components/jre-25/jre25-android-${arch}.tar.xz" "$BASE/jre25-android-${arch}.tar.xz"
-          done
-
-      - name: Install exact Android build dependencies
-        run: |
-          SDKMANAGER="$ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
-          yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" "platforms;android-34" "build-tools;34.0.0" "ndk;25.2.9519653"
-
-      - name: Set up Gradle from engine wrapper
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          validate-wrappers: false
-
-      - name: Apply Test Launcher product overlay
-        run: |
-          chmod +x launcher/patch-test-launcher.sh
-          ./launcher/patch-test-launcher.sh engine
-
-      - name: Build real Android APK
-        working-directory: engine
-        run: |
-          ./gradlew :app_pojavlauncher:assembleDebug --no-daemon --stacktrace
-
-      - name: Publish APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: Test-Launcher-debug
-          path: engine/app_pojavlauncher/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
-
-      - name: Publish direct APK release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: simple-launcher-${{ github.run_number }}
-          name: Simple Launcher ${{ github.run_number }}
-          generate_release_notes: true
-          files: engine/app_pojavlauncher/build/outputs/apk/debug/*.apk
