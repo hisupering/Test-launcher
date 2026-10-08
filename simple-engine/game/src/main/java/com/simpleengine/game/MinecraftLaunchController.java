@@ -7,6 +7,8 @@ import com.simpleengine.core.EngineConfig;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
 
 public final class MinecraftLaunchController {
     private final SimpleEngine engine;
@@ -33,7 +35,16 @@ public final class MinecraftLaunchController {
             throw new IllegalArgumentException("Java runtime is missing");
 
         MinecraftClasspath cp = new MinecraftClasspath();
-        for (java.nio.file.Path p : install.libraries) cp.add(p.toFile());
+        // The Mojang LWJGL artifacts are desktop natives. On Android the
+        // bundled Android-compatible LWJGL build must take precedence.
+        if (bundledLwjglJars != null) {
+            for (File f : bundledLwjglJars) cp.add(f);
+        }
+        for (java.nio.file.Path p : install.libraries) {
+            String s = p.toString().replace('\\\\', '/');
+            if (s.contains("/org/lwjgl/")) continue;
+            cp.add(p.toFile());
+        }
         cp.add(install.clientJar.toFile());
 
         List<String> jvm = new ArrayList<>(MinecraftArgumentResolver.resolve(install.version.jvmArguments, context));
