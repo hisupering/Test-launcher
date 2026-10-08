@@ -14,6 +14,8 @@ import net.kdt.pojavlaunch.R;
 import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.extra.ExtraConstants;
 import net.kdt.pojavlaunch.extra.ExtraCore;
+import net.kdt.pojavlaunch.PojavProfile;
+import net.kdt.pojavlaunch.value.MinecraftAccount;
 
 import java.io.File;
 import java.util.regex.Pattern;
@@ -56,6 +58,20 @@ public class TestLocalLoginFragment extends Fragment {
         if (account.exists()) {
             Tools.dialog(context, "Account already exists",
                     "This local account is already saved. Choose another name.");
+            return;
+        }
+
+        try {
+            MinecraftAccount accountData = new MinecraftAccount();
+            accountData.username = name;
+            accountData.accessToken = "0";
+            accountData.clientToken = "0";
+            accountData.profileId = "00000000-0000-0000-0000-000000000000";
+            accountData.isMicrosoft = false;
+            accountData.save();
+            PojavProfile.setCurrentProfile(requireContext(), name);
+        } catch (Exception e) {
+            Tools.dialog(context, "Account error", "Could not save the local account. Please try again.");
             return;
         }
 
