@@ -63,6 +63,21 @@ jobs:
         run: |
           gradle --no-daemon clean build
 
+      - name: Prepare clearly named Simple Launcher APK
+        run: |
+          mkdir -p dist
+          cp simple-engine/launcher-app/build/outputs/apk/debug/*.apk dist/SimpleLauncher-debug.apk
+
+      - name: Publish Simple Launcher beta release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: simple-launcher-${{ github.run_number }}
+          name: Simple Launcher beta ${{ github.run_number }}
+          prerelease: true
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: dist/SimpleLauncher-debug.apk
+
       - name: Publish Simple Engine libraries
         uses: actions/upload-artifact@v4
         with:
@@ -72,5 +87,5 @@ jobs:
             simple-engine/runtime/build/libs/*.jar
             simple-engine/game/build/libs/*.jar
             simple-engine/android/build/outputs/aar/*.aar
-            simple-engine/launcher-app/build/outputs/apk/debug/*.apk
+            dist/SimpleLauncher-debug.apk
           if-no-files-found: error
