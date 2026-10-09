@@ -97,11 +97,24 @@ public final class SimpleLauncherActivity extends Activity {
     }
 
     private List<String> installedVersions() {
-        File dir=new File(engine.getRoot(),"versions");
-        File[] files=dir.listFiles((d,n)->n.endsWith(".json"));
-        List<String> out=new ArrayList<>();
-        if(files!=null) for(File f:files) out.add(f.getName().substring(0,f.getName().length()-5));
-        Collections.sort(out,Collections.reverseOrder());
+        File dir = new File(engine.getRoot(), "versions");
+        List<String> out = new ArrayList<>();
+        File[] dirs = dir.listFiles(File::isDirectory);
+        if (dirs != null) {
+            for (File versionDir : dirs) {
+                File metadata = new File(versionDir, versionDir.getName() + ".json");
+                if (metadata.isFile()) out.add(versionDir.getName());
+            }
+        }
+        // Read legacy flat metadata too, without duplicating nested versions.
+        File[] flat = dir.listFiles((d, n) -> n.endsWith(".json"));
+        if (flat != null) {
+            for (File f : flat) {
+                String id = f.getName().substring(0, f.getName().length() - 5);
+                if (!out.contains(id)) out.add(id);
+            }
+        }
+        Collections.sort(out, Collections.reverseOrder());
         return out;
     }
 
