@@ -19,17 +19,23 @@ public final class SimpleEngineRenderView extends SurfaceView implements Surface
     @Override
     public void surfaceCreated(SurfaceHolder holder) {
         if (!SimpleEngineNativeBridge.load()) return;
+
         SimpleEngineNativeBridge.attachSurface(holder.getSurface());
         running = true;
         renderThread = new Thread(() -> {
-            while (running) {
-                SimpleEngineNativeBridge.renderFrame();
-                try {
-                    Thread.sleep(16L);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    break;
+            try {
+                while (running && !Thread.currentThread().isInterrupted()) {
+                    SimpleEngineNativeBridge.renderFrame();
+                    try {
+                        Thread.sleep(16L);
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
                 }
+            } finally {
+                // EGL is created by renderFrame and must be torn down on this same thread.
+                SimpleEngineNativeBridge.detachSurface();
             }
         }, "SimpleEngine-Render");
         renderThread.start();
@@ -38,17 +44,22 @@ public final class SimpleEngineRenderView extends SurfaceView implements Surface
     @Override
     public void surfaceDestroyed(SurfaceHolder holder) {
         running = false;
-        if (renderThread != null) {
-            renderThread.interrupt();
+        Thread thread = renderThread;
+        if (thread != null) {
+            thread.interrupt();
+            try {
+                thread.join(1500L);
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+            }
             renderThread = null;
-        }
-        if (SimpleEngineNativeBridge.load()) {
-            SimpleEngineNativeBridge.detachSurface();
         }
     }
 
     @Override
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {}
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        // The render thread queries the actual EGL surface dimensions each frame.
+    }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
@@ -56,29 +67,31 @@ public final class SimpleEngineRenderView extends SurfaceView implements Surface
 
         final int action = event.getActionMasked();
         final int actionIndex = event.getActionIndex();
-
-        if (action == MotionEvent.ACTION_DOWN
-                || action == MotionEvent.ACTION_POINTER_DOWN
-                || action == MotionEvent.ACTION_MOVE
-                || action == MotionEvent.ACTION_UP
-                || action == MotionEvent.ACTION_POINTER_UP
-                || action == MotionEvent.ACTION_CANCEL) {
-
-            if (action == MotionEvent.ACTION_MOVE) {
-                for (int i = 0; i < event.getPointerCount(); i++) {
-                    sendPointer(event, i);
+        switch (action) {
+            case MotionEvent.ACTION_DOWN:
+            case MotionEvent.ACTION_POINTER_DOWN:
+            case MotionEvent.ACTION_MOVE:
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_POINTER_UP:
+            case MotionEvent.ACTION_CANCEL:
+                if (action == MotionEvent.ACTION_MOVE) {
+                    for (int i = 0; i < event.getPointerCount(); i++) {
+                        sendPointer(event, action, actionIndex, i);
+                    }
+                } else {
+                    sendPointer(event, action, actionIndex, actionIndex);
                 }
-            } else {
-                sendPointer(event, actionIndex);
-            }
+                return true;
+            default:
+                return true;
         }
-        return true;
     }
 
-    private static void sendPointer(MotionEvent event, int index) {
+    private static void sendPointer(MotionEvent event, int action, int actionIndex, int index) {
         if (index < 0 || index >= event.getPointerCount()) return;
         SimpleEngineNativeBridge.sendTouch(
-                event.getActionMasked(),
+                action,
+                actionIndex,
                 event.getPointerId(index),
                 event.getX(index),
                 event.getY(index),
