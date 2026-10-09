@@ -14,27 +14,30 @@ static ANativeWindow* g_window = nullptr;
 static std::mutex g_touchMutex;
 static std::queue<TouchEvent> g_touchQueue;
 
-extern "C" JNIEXPORT void JNICALL Java_com_simplelauncher_engine_android_SimpleEngineNativeBridge_attachSurface(JNIEnv* env,jclass,jobject surface) {
-    if (g_window) { ANativeWindow_release(g_window); g_window=nullptr; }
-    if (surface) { g_window=ANativeWindow_fromSurface(env,surface); simple_engine_gl_start(g_window); }
+extern "C" JNIEXPORT void JNICALL Java_com_simpleengine_android_SimpleEngineNativeBridge_attachSurface(JNIEnv* env,jclass,jobject surface) {
+    if (g_window) { simple_engine_gl_stop(); ANativeWindow_release(g_window); g_window=nullptr; }
+    if (surface) {
+        g_window=ANativeWindow_fromSurface(env,surface);
+        if (g_window) simple_engine_gl_start(g_window);
+    }
 }
-extern "C" JNIEXPORT void JNICALL Java_com_simplelauncher_engine_android_SimpleEngineNativeBridge_detachSurface(JNIEnv*,jclass) {
+extern "C" JNIEXPORT void JNICALL Java_com_simpleengine_android_SimpleEngineNativeBridge_detachSurface(JNIEnv*,jclass) {
     simple_engine_gl_stop();
     if (g_window) { ANativeWindow_release(g_window); g_window=nullptr; }
 }
-extern "C" JNIEXPORT void JNICALL Java_com_simplelauncher_engine_android_SimpleEngineNativeBridge_renderFrame(JNIEnv*,jclass) { simple_engine_gl_frame(); }
+extern "C" JNIEXPORT void JNICALL Java_com_simpleengine_android_SimpleEngineNativeBridge_renderFrame(JNIEnv*,jclass) { simple_engine_gl_frame(); }
 
-extern "C" JNIEXPORT void JNICALL Java_com_simplelauncher_engine_android_SimpleEngineNativeBridge_sendTouch(JNIEnv*,jclass,jint action,jint pointerId,jfloat x,jfloat y,jfloat pressure) {
+extern "C" JNIEXPORT void JNICALL Java_com_simpleengine_android_SimpleEngineNativeBridge_sendTouch(JNIEnv*,jclass,jint action,jint pointerId,jfloat x,jfloat y,jfloat pressure) {
     std::lock_guard<std::mutex> lock(g_touchMutex);
     if (g_touchQueue.size() >= 256) g_touchQueue.pop();
     g_touchQueue.push({action,pointerId,x,y,pressure,(int64_t)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch()).count()});
 }
 
-extern "C" JNIEXPORT jint JNICALL Java_com_simplelauncher_engine_android_SimpleEngineNativeBridge_pollTouch(JNIEnv* env,jclass,jintArray meta,jfloatArray values) {
+extern "C" JNIEXPORT jint JNICALL Java_com_simpleengine_android_SimpleEngineNativeBridge_pollTouch(JNIEnv* env,jclass,jintArray meta,jfloatArray values) {
     if (!meta || env->GetArrayLength(meta) < 3 || !values || env->GetArrayLength(values) < 3) return 0;
     TouchEvent e;
     { std::lock_guard<std::mutex> lock(g_touchMutex); if (g_touchQueue.empty()) return 0; e=g_touchQueue.front(); g_touchQueue.pop(); }
-    jint m[3]={(jint)e.action,(jint)e.pointerId,(jint)e.timeMs};
+    jint m[3]={(jint)e.action,(jint)e.pointerId,(jint)(e.timeMs & 0x7fffffff)};
     jfloat v[3]={e.x,e.y,e.pressure};
     env->SetIntArrayRegion(meta,0,3,m);
     env->SetFloatArrayRegion(values,0,3,v);
