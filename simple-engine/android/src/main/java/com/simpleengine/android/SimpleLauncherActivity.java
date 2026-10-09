@@ -1,26 +1,35 @@
 package com.simpleengine.android;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.view.View;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.provider.OpenableColumns;
 import android.widget.*;
 import com.simpleengine.game.*;
 import java.io.File;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public final class SimpleLauncherActivity extends Activity {
+    private static final int PICK_CONTENT_FILE = 701;
+    private static final String PREF_CONTENT_CATEGORY = "content_category";
     private SimpleEngineBridge engine;
     private android.content.SharedPreferences prefs;
     private LinearLayout root;
     private TextView status;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private MinecraftLaunchController launchController;
+    private String pendingContentCategory = "mods";
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -106,7 +115,6 @@ public final class SimpleLauncherActivity extends Activity {
                 if (metadata.isFile()) out.add(versionDir.getName());
             }
         }
-        // Read legacy flat metadata too, without duplicating nested versions.
         File[] flat = dir.listFiles((d, n) -> n.endsWith(".json"));
         if (flat != null) {
             for (File f : flat) {
@@ -187,7 +195,163 @@ public final class SimpleLauncherActivity extends Activity {
         });
     }
 
-    private void showMods() {
+    private File gameDirectory() {
+        File dir = new File(engine.getRoot(), "game");
+        if (!dir.exists()) dir.mkdirs();
+        return dir;
+    }
+
+    private File contentDirectory(String category) {
+        String folder;
+        if ("resourcepacks".equals(category)) folder = "resourcepacks";
+        else if ("shaderpacks".equals(category)) folder = "shaderpacks";
+        else folder = "mods";
+        File dir = new File(gameDirectory(), folder);
+        if (!dir.exists()) dir.mkdirs();
+        return dir;
+    }
+
+    private String contentTitle(String category) {
+        if ("resourcepacks".equals(category)) return "Resource Packs";
+        if ("shaderpacks".equals(category)) return "Shader Packs";
+        return "Mods";
+    }
+
+    private String allowedExtensions(String category) {
+        if ("mods".equals(category)) return ".jar";
+        return ".zip";
+    }
+
+    private void showContentManager(String category) {
+        pendingContentCategory = category;
+        File dir = contentDirectory(category);
+        base(contentTitle(category));
+        TextView info = new TextView(this);
+        String hint = "mods".equals(category)
+            ? "فایل مود .jar را وارد کن. برای اجرا باید نسخهٔ سازگار Fabric/Forge نصب باشد."
+            : ("resourcepacks".equals(category)
+                ? "فایل ریسورس‌پک .zip را وارد کن؛ سپس در تنظیمات Minecraft فعالش کن."
+                : "فایل شیدرپک .zip را وارد کن؛ برای اجرا به Iris یا OptiFine سازگار نیاز است.");
+        info.setText(hint + "\nفایل‌ها در پوشهٔ داخلی بازی ذخیره می‌شوند: " + dir.getName());
+        info.setTextSize(15); root.addView(info);
+
+        Button add = button("＋ Import " + contentTitle(category) + " from device");
+        add.setOnClickListener(v -> openContentPicker(category));
+
+        ListView list = new ListView(this);
+        List<File> files = listContentFiles(dir, category);
+        List<String> labels = new ArrayList<>();
+        for (File f : files) labels.add(f.getName() + "  •  " + readableSize(f.length()));
+        if (labels.isEmpty()) labels.add("هنوز فایلی وارد نشده");
+        list.setAdapter(new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, labels));
+        root.addView(list, new LinearLayout.LayoutParams(-1, 0, 1));
+        list.setOnItemLongClickListener((parent, view, position, id) -> {
+            if (position >= files.size()) return true;
+            File target = files.get(position);
+            new android.app.AlertDialog.Builder(this)
+                .setTitle("حذف فایل")
+                .setMessage("فایل " + target.getName() + " از لانچر حذف شود؟")
+                .setNegativeButton("Cancel", (d,w) -> {})
+                .setPositiveButton("Delete", (d,w) -> {
+                    if (target.delete()) Toast.makeText(this, "Deleted", Toast.LENGTH_SHORT).show();
+                    showContentManager(category);
+                }).show();
+            return true;
+        });
+
+        Button refresh = button("Refresh list");
+        refresh.setOnClickListener(v -> showContentManager(category));
+        Button back = button("Back to Home"); back.setOnClickListener(v -> showHome());
+    }
+
+    private List<File> listContentFiles(File dir, String category) {
+        String ext = allowedExtensions(category);
+        File[] files = dir.listFiles((d, name) -> name.toLowerCase(Locale.ROOT).endsWith(ext));
+        List<File> result = new ArrayList<>();
+        if (files != null) result.addAll(Arrays.asList(files));
+        result.sort(Comparator.comparing(File::getName, String.CASE_INSENSITIVE_ORDER));
+        return result;
+    }
+
+    private String readableSize(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        if (bytes < 1024 * 1024) return String.format(Locale.ROOT, "%.1f KB", bytes / 1024.0);
+        return String.format(Locale.ROOT, "%.1f MB", bytes / (1024.0 * 1024.0));
+    }
+
+    private void openContentPicker(String category) {
+        pendingContentCategory = category;
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+        try {
+            startActivityForResult(intent, PICK_CONTENT_FILE);
+        } catch (Throwable e) {
+            Toast.makeText(this, "نمی‌توان فایل‌انتخاب‌کن را باز کرد: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != PICK_CONTENT_FILE || resultCode != RESULT_OK || data == null || data.getData() == null) return;
+        Uri uri = data.getData();
+        String category = pendingContentCategory;
+        String name = queryDisplayName(uri);
+        String lower = name.toLowerCase(Locale.ROOT);
+        String required = allowedExtensions(category);
+        if (!lower.endsWith(required)) {
+            Toast.makeText(this, "این بخش فقط فایل " + required + " می‌پذیرد.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        try {
+            int flags = data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION;
+            getContentResolver().takePersistableUriPermission(uri, flags);
+        } catch (Throwable ignored) { }
+        File destination = contentDirectory(category);
+        String safeName = name.replaceAll("[^a-zA-Z0-9._ -]", "_").trim();
+        if (safeName.isEmpty()) safeName = "imported" + required;
+        File target = new File(destination, safeName);
+        if (target.exists()) target = new File(destination, System.currentTimeMillis() + "-" + safeName);
+        final File finalTarget = target;
+        base("Importing " + contentTitle(category));
+        status = new TextView(this);
+        status.setText("در حال کپی‌کردن فایل به پوشهٔ داخلی Simple Launcher...");
+        root.addView(status);
+        worker.execute(() -> {
+            try (InputStream in = getContentResolver().openInputStream(uri);
+                 OutputStream out = new java.io.FileOutputStream(finalTarget)) {
+                if (in == null) throw new IllegalStateException("فایل قابل خواندن نیست");
+                byte[] buffer = new byte[64 * 1024];
+                int n;
+                while ((n = in.read(buffer)) != -1) out.write(buffer, 0, n);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "وارد شد: " + finalTarget.getName(), Toast.LENGTH_LONG).show();
+                    showContentManager(category);
+                });
+            } catch (Throwable e) {
+                runOnUiThread(() -> {
+                    status.setText("Import failed: " + e.getMessage());
+                    Button back = button("Back");
+                    back.setOnClickListener(v -> showContentManager(category));
+                });
+            }
+        });
+    }
+
+    private String queryDisplayName(Uri uri) {
+        String name = null;
+        try (Cursor cursor = getContentResolver().query(uri, null, null, null, null)) {
+            if (cursor != null && cursor.moveToFirst()) {
+                int index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME);
+                if (index >= 0) name = cursor.getString(index);
+            }
+        } catch (Throwable ignored) { }
+        if (name == null || name.trim().isEmpty()) name = uri.getLastPathSegment();
+        return name == null ? "imported-file" : name;
+    }
+
+    private void showModsWebsite() {
         LinearLayout page=new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
         TextView bar=new TextView(this);
@@ -197,6 +361,9 @@ public final class SimpleLauncherActivity extends Activity {
         web.setWebViewClient(new WebViewClient());
         web.getSettings().setJavaScriptEnabled(true);
         web.getSettings().setDomStorageEnabled(true);
+        web.setDownloadListener((url, userAgent, contentDisposition, mimetype, contentLength) -> {
+            Toast.makeText(this, "برای نصب مستقیم، فایل را از بخش Import در Simple Launcher انتخاب کن.", Toast.LENGTH_LONG).show();
+        });
         web.loadUrl("https://modrinth.com/mods");
         page.addView(web,new LinearLayout.LayoutParams(-1,0,1));
         Button back=new Button(this); back.setText("Back to Simple Launcher");
@@ -214,7 +381,10 @@ public final class SimpleLauncherActivity extends Activity {
         t.setTextSize(17); root.addView(t);
         Button launch=button("Launch Minecraft"); launch.setOnClickListener(v->launchMinecraft());
         Button versions=button("Versions • Install / Installed"); versions.setOnClickListener(v->showVersions());
-        Button mods=button("Mods • Open inside app"); mods.setOnClickListener(v->showMods());
+        Button mods=button("Mods • Manage .jar files"); mods.setOnClickListener(v->showContentManager("mods"));
+        Button packs=button("Resource Packs • Manage .zip"); packs.setOnClickListener(v->showContentManager("resourcepacks"));
+        Button shaders=button("Shader Packs • Manage .zip"); shaders.setOnClickListener(v->showContentManager("shaderpacks"));
+        Button browse=button("Browse Mods on Modrinth"); browse.setOnClickListener(v->showModsWebsite());
         Button settings=button("Settings"); settings.setOnClickListener(v->showSetup());
     }
 
@@ -227,7 +397,7 @@ public final class SimpleLauncherActivity extends Activity {
 
         base("Launching Minecraft " + version);
         status = new TextView(this);
-        status.setText("Preparing Java 21 and Minecraft files...\\nEverything stays inside Simple Launcher.");
+        status.setText("Preparing Java runtime and Minecraft files...\nEverything stays inside Simple Launcher.");
         status.setTextSize(16);
         root.addView(status);
 
@@ -242,7 +412,7 @@ public final class SimpleLauncherActivity extends Activity {
 
         worker.execute(() -> {
             try {
-                runOnUiThread(() -> status.setText("Installing Android Java 21 runtime..."));
+                runOnUiThread(() -> status.setText("Installing Android Java runtime..."));
                 File javaExecutable = engine.ensureJavaRuntime();
                 runOnUiThread(() -> { progress.setProgress(25); status.setText("Preparing Minecraft " + version + "..."); });
 
@@ -250,7 +420,7 @@ public final class SimpleLauncherActivity extends Activity {
                 if (!versionJson.isFile()) throw new IllegalStateException("Installed version metadata is missing");
                 String json = new String(java.nio.file.Files.readAllBytes(versionJson.toPath()), java.nio.charset.StandardCharsets.UTF_8);
 
-                File gameDir = new File(engine.getRoot(),"game");
+                File gameDir = gameDirectory();
                 File assetsDir = new File(engine.getRoot(),"assets");
                 File nativesDir = new File(engine.getRoot(),"natives/" + version);
                 nativesDir.mkdirs();
