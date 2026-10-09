@@ -5,6 +5,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -54,7 +55,7 @@ public final class MinecraftInstaller {
      * size are reused so every launch does not re-hash the entire assets directory.
      */
     private static void downloadAssetObjects(Path index, Path assetsRoot) throws Exception {
-        JsonObject root = JsonParser.parseString(Files.readString(index)).getAsJsonObject();
+        JsonObject root = JsonParser.parseString(new String(Files.readAllBytes(index), StandardCharsets.UTF_8)).getAsJsonObject();
         JsonObject objects = root.getAsJsonObject("objects");
         if (objects == null) return;
 
