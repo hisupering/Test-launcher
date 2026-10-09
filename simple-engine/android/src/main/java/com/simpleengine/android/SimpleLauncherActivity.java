@@ -178,6 +178,10 @@ public final class SimpleLauncherActivity extends Activity {
         microsoftButton.setAllCaps(false); microsoftButton.setEnabled(false);
         microsoftButton.setText("Microsoft sign-in  •  Coming soon");
         microsoft.addView(microsoftButton, new LinearLayout.LayoutParams(-1, dp(46)));
+        microsoftButton.setOnClickListener(v -> new android.app.AlertDialog.Builder(this)
+            .setTitle("Microsoft sign-in")
+            .setMessage("Microsoft authentication is not implemented in this build yet. Offline accounts are available now.")
+            .setPositiveButton("OK", (d,w) -> {}).show());
 
         LinearLayout offline = panel();
         TextView o = label("Offline Account", 18, textColor()); o.setTypeface(null, android.graphics.Typeface.BOLD);
@@ -510,7 +514,6 @@ public final class SimpleLauncherActivity extends Activity {
         row.addView(account, half2); account.setOnClickListener(v -> showAccount());
 
         section("LIBRARY");
-        LinearLayout library = panel();
         Button mods = button("Mods  →");
         Button packs = button("Resource packs  →");
         Button shaders = button("Shader packs  →");
