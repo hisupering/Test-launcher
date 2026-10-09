@@ -134,7 +134,7 @@ public final class SimpleLauncherActivity extends Activity {
     private String joinConsoleLines() {
         StringBuilder b = new StringBuilder();
         int start = Math.max(0, consoleLines.size() - 250);
-        for (int i = start; i < consoleLines.size(); i++) b.append(consoleLines.get(i)).append('\\n');
+        for (int i = start; i < consoleLines.size(); i++) b.append(consoleLines.get(i)).append('\n');
         return b.toString();
     }
 
