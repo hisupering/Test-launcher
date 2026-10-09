@@ -23,3 +23,7 @@ The engine is being built incrementally. The first milestone is a clean, indepen
 - `native/` - future JNI/LWJGL/OpenGL/audio/input bridge
 
 No PojavLauncher or Amethyst source is required by this module.
+
+## Launcher UI
+
+The Android launcher uses a green Simple theme, staged first-run setup (appearance, memory, then account), a bottom navigation bar, an in-app Modrinth view, and an in-app console. Version selection defaults to official releases; snapshots can be included explicitly. The adaptive app icon is packaged for modern Android, with a fallback icon for older devices.
