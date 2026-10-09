@@ -304,10 +304,12 @@ public final class SimpleLauncherActivity extends Activity {
             Toast.makeText(this, "این بخش فقط فایل " + required + " می‌پذیرد.", Toast.LENGTH_LONG).show();
             return;
         }
-        try {
-            int flags = data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION;
-            getContentResolver().takePersistableUriPermission(uri, flags);
-        } catch (Throwable ignored) { }
+        int grantedFlags = data.getFlags();
+        if ((grantedFlags & Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0) {
+            try {
+                getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            } catch (Throwable ignored) { }
+        }
         File destination = contentDirectory(category);
         String safeName = name.replaceAll("[^a-zA-Z0-9._ -]", "_").trim();
         if (safeName.isEmpty()) safeName = "imported" + required;
