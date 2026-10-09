@@ -48,7 +48,7 @@ public final class SimpleEngineRenderView extends SurfaceView implements Surface
         if (thread != null) {
             thread.interrupt();
             try {
-                thread.join(1500L);
+                thread.join();
             } catch (InterruptedException interrupted) {
                 Thread.currentThread().interrupt();
             }
