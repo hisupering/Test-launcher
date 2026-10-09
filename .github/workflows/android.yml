@@ -56,7 +56,7 @@ jobs:
           find .ci-lwjgl/bin/RELEASE -type f -name '*.jar' -exec cp {} simple-engine/launcher-app/src/main/assets/simple-lwjgl/arm64/jars/ \;
           # Package every shared library emitted or downloaded by the Android LWJGL build,
           # including GLFW and OpenAL dependencies that bin/out omits.
-          find .ci-lwjgl/bin/libs/native/linux/arm64/org/lwjgl .ci-lwjgl/bin/out -type f -name '*.so' -exec cp {} simple-engine/launcher-app/src/main/assets/simple-lwjgl/arm64/natives/ \\\;
+          find .ci-lwjgl/bin/libs/native/linux/arm64/org/lwjgl .ci-lwjgl/bin/out -type f -name '*.so' -exec cp {} simple-engine/launcher-app/src/main/assets/simple-lwjgl/arm64/natives/ \;
 
       - name: Build independent Simple Engine
         working-directory: simple-engine
