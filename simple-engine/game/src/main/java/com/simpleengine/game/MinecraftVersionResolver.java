@@ -4,6 +4,7 @@ import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public final class MinecraftVersionResolver {
@@ -28,7 +29,7 @@ public final class MinecraftVersionResolver {
                 metadata.mainClass,
                 gameDirectory,
                 classpath,
-                new ArrayList<>(jvmArguments == null ? List.of() : jvmArguments),
-                new ArrayList<>(gameArguments == null ? List.of() : gameArguments));
+                new ArrayList<>(jvmArguments == null ? Collections.emptyList() : jvmArguments),
+                new ArrayList<>(gameArguments == null ? Collections.emptyList() : gameArguments));
     }
 }

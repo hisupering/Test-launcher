@@ -2,7 +2,7 @@ plugins { id 'com.android.library' }
 android {
  namespace 'com.simplelauncher.engine.android'
  compileSdk 35
- defaultConfig { minSdk 24
+ defaultConfig { minSdk 26
         externalNativeBuild { cmake { cppFlags "-std=c++17" } }
     }
  externalNativeBuild { cmake { path "../native/CMakeLists.txt"; version "3.22.1" } }

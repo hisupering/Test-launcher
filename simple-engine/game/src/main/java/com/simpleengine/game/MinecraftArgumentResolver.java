@@ -8,17 +8,23 @@ public final class MinecraftArgumentResolver {
     private MinecraftArgumentResolver() {}
 
     public static List<String> resolve(List<String> raw, MinecraftLaunchContext c) {
+        File root = c.gameDirectory == null ? null : c.gameDirectory.getParentFile();
+        File libraries = root == null ? null : new File(root, "libraries");
         MinecraftArguments v = new MinecraftArguments()
                 .put("auth_player_name", c.username)
                 .put("auth_uuid", c.uuid)
                 .put("auth_access_token", c.accessToken)
+                .put("auth_session", c.accessToken)
                 .put("user_type", c.userType)
+                .put("user_properties", "{}")
                 .put("version_type", c.versionType)
                 .put("version_name", c.versionName)
                 .put("game_directory", abs(c.gameDirectory))
                 .put("assets_root", abs(c.assetsDirectory))
+                .put("game_assets", abs(c.assetsDirectory))
                 .put("assets_index_name", c.assetIndexName)
                 .put("natives_directory", abs(c.nativesDirectory))
+                .put("library_directory", abs(libraries))
                 .put("launcher_name", c.launcherName)
                 .put("launcher_version", c.launcherVersion)
                 .put("clientid", "")
@@ -30,6 +36,7 @@ public final class MinecraftArgumentResolver {
             for (String s : raw) {
                 if (s == null || s.isEmpty()) continue;
                 String x = v.resolve(s);
+                // Do not pass unresolved Mojang placeholders to the JVM/game process.
                 if (x != null && x.contains("${")) continue;
                 out.add(x);
             }

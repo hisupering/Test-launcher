@@ -21,13 +21,19 @@ public final class SimpleEngine {
             fail(new IllegalStateException("Cannot create game directory")); return;
         }
 
+        File tempDir = new File(config.gameDirectory, "tmp");
+        if (!tempDir.exists() && !tempDir.mkdirs()) {
+            fail(new IllegalStateException("Cannot create Java temporary directory: " + tempDir)); return;
+        }
+
         List<String> command = new ArrayList<>();
         command.add(config.javaExecutable.getAbsolutePath());
         command.addAll(config.jvmArguments);
         command.add("-Dsimple.engine=true");
         command.add("-Dsimple.version=" + config.versionId);
         command.add("-Dsimple.username=" + config.username);
-        command.add("-Djava.io.tmpdir=" + new File(config.gameDirectory, "tmp").getAbsolutePath());
+        command.add("-Duser.home=" + config.gameDirectory.getAbsolutePath());
+        command.add("-Djava.io.tmpdir=" + tempDir.getAbsolutePath());
         command.addAll(config.gameArguments);
 
         setState(EngineState.STARTING);
@@ -35,6 +41,14 @@ public final class SimpleEngine {
             ProcessBuilder builder = new ProcessBuilder(command);
             builder.directory(config.gameDirectory);
             builder.redirectErrorStream(true);
+
+            // Keep runtime caches, temp files and user configuration inside the app sandbox.
+            Map<String, String> env = builder.environment();
+            env.put("HOME", config.gameDirectory.getAbsolutePath());
+            env.put("TMPDIR", tempDir.getAbsolutePath());
+            env.put("JAVA_HOME", config.javaExecutable.getParentFile().getParentFile().getAbsolutePath());
+            env.put("LANG", "en_US.UTF-8");
+
             String nativePath = findProperty(config.jvmArguments, "-Dsimple.native.path=");
             if (nativePath != null && !nativePath.isEmpty()) {
                 String runtimeBin = config.javaExecutable.getParentFile().getAbsolutePath();
@@ -42,10 +56,10 @@ public final class SimpleEngine {
                 String runtimeLib = new File(runtimeRoot, "lib").getAbsolutePath();
                 String runtimeServer = new File(runtimeRoot, "lib/server").getAbsolutePath();
                 String nativeAndRuntime = nativePath + File.pathSeparator + runtimeServer + File.pathSeparator + runtimeLib + File.pathSeparator + runtimeBin;
-                String old = builder.environment().get("LD_LIBRARY_PATH");
-                builder.environment().put("LD_LIBRARY_PATH",
+                String old = env.get("LD_LIBRARY_PATH");
+                env.put("LD_LIBRARY_PATH",
                         old == null || old.isEmpty() ? nativeAndRuntime : nativeAndRuntime + File.pathSeparator + old);
-                builder.environment().put("PATH", runtimeBin + File.pathSeparator + builder.environment().getOrDefault("PATH", ""));
+                env.put("PATH", runtimeBin + File.pathSeparator + env.getOrDefault("PATH", ""));
             }
             process = builder.start();
             final Process started = process;

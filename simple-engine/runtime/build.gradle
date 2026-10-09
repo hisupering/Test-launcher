@@ -2,4 +2,6 @@ plugins { id 'java-library' }
 dependencies {
     api project(':core')
     implementation 'org.apache.commons:commons-compress:1.28.0'
+    // XZCompressorInputStream loads this at runtime; commons-compress does not bundle it.
+    implementation 'org.tukaani:xz:1.10'
 }
