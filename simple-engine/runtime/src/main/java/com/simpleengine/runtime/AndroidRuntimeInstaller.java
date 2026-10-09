@@ -28,8 +28,10 @@ public final class AndroidRuntimeInstaller {
         if (!archive.isFile() || !sha256(archive).equalsIgnoreCase(sha)) {
             archive.getParentFile().mkdirs();
             download(new URL(BASE + asset), archive);
-            if (!sha256(archive).equalsIgnoreCase(sha))
-                throw new IOException("JRE checksum mismatch");
+            if (!sha256(archive).equalsIgnoreCase(sha)) {
+                archive.delete();
+                throw new IOException("JRE checksum mismatch; downloaded runtime was rejected");
+            }
         }
 
         File staging = new File(root, "java/.staging-" + abi);
@@ -50,16 +52,18 @@ public final class AndroidRuntimeInstaller {
             copyTree(actual.getParentFile().getParentFile(), runtime);
         delete(staging);
         java = new File(runtime, "bin/java");
+        if (!java.isFile()) throw new IOException("Java runtime install did not produce bin/java");
         java.setExecutable(true, false);
         return java;
     }
 
-    private static String normalizeAbi(String arch) {
+    private static String normalizeAbi(String arch) throws IOException {
         arch = arch.toLowerCase(Locale.ROOT);
         if (arch.contains("aarch64") || arch.contains("arm64")) return "arm64";
         if (arch.contains("x86_64") || arch.contains("amd64")) return "x86_64";
-        if (arch.contains("86")) return "x86";
-        return "arm";
+        if (arch.equals("x86") || arch.contains("i686") || arch.contains("i386")) return "x86";
+        if (arch.contains("arm") || arch.contains("aarch")) return "arm";
+        throw new IOException("Unsupported Android CPU architecture: " + arch);
     }
 
     private static String shaFor(String abi) {
