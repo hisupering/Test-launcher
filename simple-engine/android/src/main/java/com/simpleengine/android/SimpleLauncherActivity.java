@@ -30,6 +30,8 @@ public final class SimpleLauncherActivity extends Activity {
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private MinecraftLaunchController launchController;
     private String pendingContentCategory = "mods";
+    private final List<String> consoleLines = new ArrayList<>();
+    private String activePage = "home";
 
     @Override protected void onCreate(Bundle state) {
         super.onCreate(state);
@@ -57,9 +59,10 @@ public final class SimpleLauncherActivity extends Activity {
     private int panelColor() { return prefs != null && prefs.getBoolean("dark", true) ? 0xFF1B1F27 : 0xFFFFFFFF; }
     private int textColor() { return prefs != null && prefs.getBoolean("dark", true) ? 0xFFF4F6FA : 0xFF171A21; }
     private int mutedColor() { return prefs != null && prefs.getBoolean("dark", true) ? 0xFFA8B0BE : 0xFF626B79; }
-    private int accentColor() { return 0xFF9B5CFF; }
+    private int accentColor() { return 0xFF20C878; }
 
     private void base(String title) {
+        activePage = title.toLowerCase(Locale.ROOT);
         LinearLayout page = new LinearLayout(this);
         page.setOrientation(LinearLayout.VERTICAL);
         page.setBackgroundColor(bgColor());
@@ -76,7 +79,85 @@ public final class SimpleLauncherActivity extends Activity {
         root.setPadding(0, dp(4), 0, dp(18));
         scroll.addView(root);
         page.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
+        page.addView(buildBottomNavigation(), new LinearLayout.LayoutParams(-1, dp(68)));
         setContentView(page);
+    }
+
+    private LinearLayout buildBottomNavigation() {
+        LinearLayout nav = new LinearLayout(this);
+        nav.setOrientation(LinearLayout.HORIZONTAL);
+        nav.setGravity(Gravity.CENTER);
+        nav.setPadding(dp(4), dp(5), dp(4), dp(5));
+        nav.setBackgroundColor(panelColor());
+        addNavItem(nav, "⌂", "Home", "home", this::showHome);
+        addNavItem(nav, "▦", "Mods", "mods", () -> showContentManager("mods"));
+        addNavItem(nav, "◉", "Console", "console", this::showConsole);
+        addNavItem(nav, "♙", "Account", "account", this::showAccount);
+        addNavItem(nav, "⚙", "Settings", "settings", this::showSettings);
+        return nav;
+    }
+
+    private void addNavItem(LinearLayout nav, String glyph, String caption, String key, Runnable action) {
+        LinearLayout item = new LinearLayout(this);
+        item.setOrientation(LinearLayout.VERTICAL);
+        item.setGravity(Gravity.CENTER);
+        item.setPadding(dp(2), dp(3), dp(2), dp(3));
+        int color = activePage.contains(key) ? accentColor() : mutedColor();
+        TextView icon = label(glyph, 21, color);
+        icon.setGravity(Gravity.CENTER);
+        TextView text = label(caption, 10, color);
+        text.setGravity(Gravity.CENTER);
+        item.addView(icon);
+        item.addView(text);
+        item.setOnClickListener(v -> action.run());
+        nav.addView(item, new LinearLayout.LayoutParams(0, -1, 1));
+    }
+
+    private void showConsole() {
+        base("Console");
+        TextView heading = label("Engine Log", 24, textColor());
+        heading.setTypeface(null, android.graphics.Typeface.BOLD);
+        root.addView(heading);
+        TextView hint = label("Live launcher and Minecraft messages appear here.", 13, mutedColor());
+        hint.setPadding(0, dp(6), 0, dp(12)); root.addView(hint);
+        TextView output = label("", 12, textColor());
+        output.setTypeface(android.graphics.Typeface.MONOSPACE);
+        output.setText(consoleLines.isEmpty() ? "No logs yet. Launch Minecraft to see output." : joinConsoleLines());
+        output.setTextIsSelectable(true);
+        output.setPadding(dp(12), dp(12), dp(12), dp(12));
+        output.setBackground(shape(panelColor(), 12, 0xFF303843));
+        root.addView(output, new LinearLayout.LayoutParams(-1, -2));
+        Button clear = button("Clear console");
+        clear.setOnClickListener(v -> { consoleLines.clear(); showConsole(); });
+    }
+
+    private String joinConsoleLines() {
+        StringBuilder b = new StringBuilder();
+        int start = Math.max(0, consoleLines.size() - 250);
+        for (int i = start; i < consoleLines.size(); i++) b.append(consoleLines.get(i)).append('\\n');
+        return b.toString();
+    }
+
+    private void addConsoleLine(String line) {
+        if (line == null) return;
+        consoleLines.add(line);
+        while (consoleLines.size() > 500) consoleLines.remove(0);
+    }
+
+    private void showSettings() {
+        base("Settings");
+        TextView heading = label("Launcher settings", 25, textColor());
+        heading.setTypeface(null, android.graphics.Typeface.BOLD); root.addView(heading);
+        TextView summary = label("Theme, memory and player preferences.", 14, mutedColor());
+        summary.setPadding(0, dp(6), 0, dp(14)); root.addView(summary);
+        Button appearance = button("Appearance  •  " + (prefs.getBoolean("dark", true) ? "Dark" : "Light"));
+        appearance.setOnClickListener(v -> showSetup());
+        Button memory = button("Memory  •  " + prefs.getInt("ram_mb", 1024) + " MB");
+        memory.setOnClickListener(v -> showRamSetup());
+        Button versions = button("Minecraft versions");
+        versions.setOnClickListener(v -> showVersions());
+        Button packs = button("Resource packs"); packs.setOnClickListener(v -> showContentManager("resourcepacks"));
+        Button shaders = button("Shader packs"); shaders.setOnClickListener(v -> showContentManager("shaderpacks"));
     }
 
     private void section(String text) {
@@ -124,42 +205,50 @@ public final class SimpleLauncherActivity extends Activity {
     }
 
     private void showSetup() {
-        base("First-time setup");
-        TextView heading = label("Make it yours.", 27, textColor());
-        heading.setTypeface(null, android.graphics.Typeface.BOLD);
-        root.addView(heading);
-        TextView subtitle = label("Choose your look and memory allocation.", 14, mutedColor());
-        subtitle.setPadding(0, dp(6), 0, dp(14)); root.addView(subtitle);
+        base("Appearance");
+        TextView step = label("STEP 1 OF 3", 11, accentColor());
+        step.setTypeface(null, android.graphics.Typeface.BOLD); root.addView(step);
+        TextView heading = label("Choose your style", 28, textColor());
+        heading.setTypeface(null, android.graphics.Typeface.BOLD); heading.setPadding(0, dp(8), 0, dp(4)); root.addView(heading);
+        TextView subtitle = label("You can change this any time in Settings.", 14, mutedColor());
+        subtitle.setPadding(0, 0, 0, dp(18)); root.addView(subtitle);
         section("APPEARANCE");
-        RadioGroup theme = new RadioGroup(this);
-        theme.setOrientation(RadioGroup.HORIZONTAL);
-        RadioButton dark = new RadioButton(this); dark.setText("Dark"); dark.setTextColor(textColor()); dark.setId(View.generateViewId());
-        RadioButton light = new RadioButton(this); light.setText("Light"); light.setTextColor(textColor()); light.setId(View.generateViewId());
+        RadioGroup theme = new RadioGroup(this); theme.setOrientation(RadioGroup.VERTICAL);
+        RadioButton dark = new RadioButton(this); dark.setText("  Dark mode"); dark.setTextSize(16); dark.setTextColor(textColor()); dark.setId(View.generateViewId());
+        RadioButton light = new RadioButton(this); light.setText("  Light mode"); light.setTextSize(16); light.setTextColor(textColor()); light.setId(View.generateViewId());
         theme.addView(dark); theme.addView(light);
         theme.check(prefs.getBoolean("dark", true) ? dark.getId() : light.getId());
-        root.addView(theme);
-        section("MEMORY");
-        TextView ram = label("Minecraft RAM  •  " + prefs.getInt("ram_mb", 1024) + " MB", 15, textColor()); root.addView(ram);
-        SeekBar bar = new SeekBar(this); bar.setMax(16);
-        bar.setProgress(Math.max(0, Math.min(16, (prefs.getInt("ram_mb",1024)-512)/256)));
-        bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
-            public void onProgressChanged(SeekBar b,int p,boolean f){ ram.setText("Minecraft RAM  •  " + (512+p*256) + " MB"); }
-            public void onStartTrackingTouch(SeekBar b){} public void onStopTrackingTouch(SeekBar b){}
-        });
-        root.addView(bar);
-        section("PLAYER");
-        EditText name = new EditText(this); name.setSingleLine(); name.setTextColor(textColor());
-        name.setHintTextColor(mutedColor()); name.setHint("Player name");
-        name.setText(prefs.getString("username","Player"));
-        name.setBackground(shape(panelColor(), 12, 0xFF454C5A)); name.setPadding(dp(12), 0, dp(12), 0);
-        root.addView(name, new LinearLayout.LayoutParams(-1, dp(52)));
-        Button next = accentButton("Continue  →");
+        LinearLayout choice = panel(); choice.addView(theme);
+        Button next = accentButton("Next  →");
         next.setOnClickListener(v -> {
-            prefs.edit().putBoolean("dark",theme.getCheckedRadioButtonId()==dark.getId())
-                .putInt("ram_mb",512+bar.getProgress()*256)
-                .putString("username",cleanName(name.getText().toString())).apply();
-            showAccount();
+            prefs.edit().putBoolean("dark", theme.getCheckedRadioButtonId() == dark.getId()).apply();
+            showRamSetup();
         });
+    }
+
+    private void showRamSetup() {
+        base("Memory");
+        TextView step = label("STEP 2 OF 3", 11, accentColor());
+        step.setTypeface(null, android.graphics.Typeface.BOLD); root.addView(step);
+        TextView heading = label("Set your memory", 28, textColor());
+        heading.setTypeface(null, android.graphics.Typeface.BOLD); heading.setPadding(0, dp(8), 0, dp(4)); root.addView(heading);
+        TextView subtitle = label("Choose how much RAM Minecraft may use.", 14, mutedColor());
+        subtitle.setPadding(0, 0, 0, dp(18)); root.addView(subtitle);
+        LinearLayout card = panel();
+        TextView ram = label(prefs.getInt("ram_mb", 1024) + " MB", 30, accentColor());
+        ram.setTypeface(null, android.graphics.Typeface.BOLD); card.addView(ram);
+        SeekBar bar = new SeekBar(this); bar.setMax(28);
+        bar.setProgress(Math.max(0, Math.min(28, (prefs.getInt("ram_mb", 1024) - 512) / 256)));
+        bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            public void onProgressChanged(SeekBar b, int p, boolean fromUser) { ram.setText((512 + p * 256) + " MB"); }
+            public void onStartTrackingTouch(SeekBar b) {}
+            public void onStopTrackingTouch(SeekBar b) {}
+        });
+        card.addView(bar);
+        TextView note = label("Available range: 512 MB – 7.5 GB. Keep some memory for Android.", 12, mutedColor());
+        note.setPadding(0, dp(8), 0, 0); card.addView(note);
+        Button next = accentButton("Next  →");
+        next.setOnClickListener(v -> { prefs.edit().putInt("ram_mb", 512 + bar.getProgress() * 256).apply(); showAccount(); });
     }
 
     private void showAccount() {
@@ -453,23 +542,21 @@ public final class SimpleLauncherActivity extends Activity {
     }
 
     private void showModsWebsite() {
-        LinearLayout page=new LinearLayout(this);
-        page.setOrientation(LinearLayout.VERTICAL);
-        TextView bar=new TextView(this);
-        bar.setText("Simple Mods • Modrinth"); bar.setTextSize(20); bar.setPadding(20,20,20,20);
-        page.addView(bar);
-        WebView web=new WebView(this);
+        base("Mods");
+        TextView heading = label("Discover mods", 24, textColor());
+        heading.setTypeface(null, android.graphics.Typeface.BOLD); root.addView(heading);
+        TextView info = label("Modrinth opens inside Simple Launcher.", 13, mutedColor());
+        info.setPadding(0, dp(4), 0, dp(8)); root.addView(info);
+        WebView web = new WebView(this);
+        web.setBackgroundColor(bgColor());
         web.setWebViewClient(new WebViewClient());
         web.getSettings().setJavaScriptEnabled(true);
         web.getSettings().setDomStorageEnabled(true);
-        web.setDownloadListener((url, userAgent, contentDisposition, mimetype, contentLength) -> {
-            Toast.makeText(this, "برای نصب مستقیم، فایل را از بخش Import در Simple Launcher انتخاب کن.", Toast.LENGTH_LONG).show();
-        });
+        web.setDownloadListener((url, userAgent, contentDisposition, mimetype, contentLength) ->
+            Toast.makeText(this, "Download in browser is not installed automatically yet. Use Import in Mods.", Toast.LENGTH_LONG).show());
         web.loadUrl("https://modrinth.com/mods");
-        page.addView(web,new LinearLayout.LayoutParams(-1,0,1));
-        Button back=new Button(this); back.setText("Back to Simple Launcher");
-        back.setOnClickListener(v->showHome()); page.addView(back);
-        setContentView(page);
+        root.addView(web, new LinearLayout.LayoutParams(-1, dp(480)));
+        Button manage = button("Manage imported mods"); manage.setOnClickListener(v -> showContentManager("mods"));
     }
 
     private void showHome() {
@@ -485,15 +572,15 @@ public final class SimpleLauncherActivity extends Activity {
         LinearLayout hero = new LinearLayout(this);
         hero.setOrientation(LinearLayout.VERTICAL);
         hero.setPadding(dp(20), dp(20), dp(20), dp(18));
-        hero.setBackground(shape(0xFF211A32, 22, 0xFF47336B));
+        hero.setBackground(shape(prefs.getBoolean("dark", true) ? 0xFF123326 : 0xFFE2F8EC, 22, 0xFF20C878));
         LinearLayout.LayoutParams hp = new LinearLayout.LayoutParams(-1, -2); hp.bottomMargin = dp(14);
         root.addView(hero, hp);
-        TextView eyebrow = label("SIMPLE LAUNCHER", 11, 0xFFCBB1FF);
+        TextView eyebrow = label("SIMPLE LAUNCHER", 11, accentColor());
         eyebrow.setTypeface(null, android.graphics.Typeface.BOLD); eyebrow.setLetterSpacing(0.12f);
         hero.addView(eyebrow);
         TextView game = label("Minecraft Java Edition", 21, 0xFFFFFFFF);
         game.setTypeface(null, android.graphics.Typeface.BOLD); game.setPadding(0, dp(8), 0, dp(5)); hero.addView(game);
-        TextView detail = label(current.isEmpty() ? "No version installed yet" : "Selected version  •  " + current, 13, 0xFFD8CDEA);
+        TextView detail = label(current.isEmpty() ? "No version installed yet" : "Selected version  •  " + current, 13, prefs.getBoolean("dark", true) ? 0xFFD6E9DF : 0xFF275D42);
         detail.setPadding(0, 0, 0, dp(14)); hero.addView(detail);
         Button play = new Button(this); play.setText(current.isEmpty() ? "Install a version first" : "▶   PLAY MINECRAFT");
         play.setAllCaps(false); play.setTextSize(15); play.setTextColor(0xFFFFFFFF);
@@ -523,7 +610,7 @@ public final class SimpleLauncherActivity extends Activity {
         Button browse = button("Browse Modrinth  →");
         browse.setOnClickListener(v -> showModsWebsite());
         Button settings = button("Settings  →");
-        settings.setOnClickListener(v -> showSetup());
+        settings.setOnClickListener(v -> showSettings());
         TextView footer = label("SIMPLE ENGINE  •  " + prefs.getString("username","Player")
             + "  •  " + prefs.getInt("ram_mb",1024) + " MB RAM", 11, mutedColor());
         footer.setGravity(Gravity.CENTER); footer.setPadding(0, dp(20), 0, dp(4)); root.addView(footer);
@@ -607,12 +694,15 @@ public final class SimpleLauncherActivity extends Activity {
 
                 launchController = new MinecraftLaunchController(new com.simpleengine.core.EngineListener() {
                     public void onStateChanged(com.simpleengine.core.EngineState state) {
+                        addConsoleLine("STATE: " + state);
                         runOnUiThread(() -> status.setText("Minecraft JVM: " + state));
                     }
                     public void onLog(String line) {
+                        addConsoleLine(line);
                         runOnUiThread(() -> status.setText("Minecraft: " + line));
                     }
                     public void onError(Throwable error) {
+                        addConsoleLine("ERROR: " + error);
                         runOnUiThread(() -> status.setText("Minecraft error: " + error));
                     }
                 });
