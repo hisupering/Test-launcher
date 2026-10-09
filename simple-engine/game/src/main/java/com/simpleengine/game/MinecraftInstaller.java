@@ -6,7 +6,15 @@ import com.google.gson.JsonParser;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 public final class MinecraftInstaller {
     private MinecraftInstaller() {}
@@ -41,13 +49,49 @@ public final class MinecraftInstaller {
         return new MinecraftInstallResult(v, client, libs, index);
     }
 
+    /**
+     * Downloads content-addressed assets concurrently. Existing files with the expected
+     * size are reused so every launch does not re-hash the entire assets directory.
+     */
     private static void downloadAssetObjects(Path index, Path assetsRoot) throws Exception {
         JsonObject root = JsonParser.parseString(Files.readString(index)).getAsJsonObject();
         JsonObject objects = root.getAsJsonObject("objects");
         if (objects == null) return;
-        for (JsonElement e : objects.entrySet().stream().map(java.util.Map.Entry::getValue).toArray(JsonElement[]::new)) {
+
+        Set<String> hashes = new HashSet<>();
+        for (java.util.Map.Entry<String, JsonElement> entry : objects.entrySet()) {
+            JsonElement e = entry.getValue();
             if (!e.isJsonObject() || !e.getAsJsonObject().has("hash")) continue;
-            MinecraftAssetDownloader.ensureObject(assetsRoot, e.getAsJsonObject().get("hash").getAsString());
+            hashes.add(e.getAsJsonObject().get("hash").getAsString());
+        }
+
+        int threads = Math.max(2, Math.min(8, Runtime.getRuntime().availableProcessors()));
+        ExecutorService pool = Executors.newFixedThreadPool(threads);
+        CompletionService<Void> completed = new ExecutorCompletionService<>(pool);
+        int pending = 0;
+        try {
+            for (String hash : hashes) {
+                Path target = MinecraftAssetDownloader.objectPath(assetsRoot, hash);
+                if (Files.isRegularFile(target) && Files.size(target) > 0) continue;
+                completed.submit(() -> {
+                    MinecraftAssetDownloader.ensureObject(assetsRoot, hash);
+                    return null;
+                });
+                pending++;
+            }
+
+            for (int i = 0; i < pending; i++) {
+                try {
+                    completed.take().get();
+                } catch (ExecutionException e) {
+                    Throwable cause = e.getCause();
+                    if (cause instanceof Exception) throw (Exception) cause;
+                    throw new RuntimeException(cause);
+                }
+            }
+        } finally {
+            pool.shutdownNow();
+            pool.awaitTermination(5, TimeUnit.SECONDS);
         }
     }
 }
