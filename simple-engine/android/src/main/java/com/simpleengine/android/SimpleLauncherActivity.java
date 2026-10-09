@@ -326,6 +326,14 @@ public final class SimpleLauncherActivity extends Activity {
         List<String> installed=installedVersions();
         if(installed.isEmpty()) installed.add("هنوز نسخه‌ای نصب نشده");
         installedList.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_list_item_1,installed));
+        installedList.setOnItemClickListener((parent, view, position, id) -> {
+            if (position < installed.size() && !installed.get(position).equals("هنوز نسخه‌ای نصب نشده")) {
+                String selected = installed.get(position);
+                prefs.edit().putString("version", selected).apply();
+                Toast.makeText(this, "Selected " + selected, Toast.LENGTH_SHORT).show();
+                showVersions();
+            }
+        });
         root.addView(installedList,new LinearLayout.LayoutParams(-1,180));
 
         TextView onlineTitle=new TextView(this); onlineTitle.setText("Official versions");
@@ -336,29 +344,55 @@ public final class SimpleLauncherActivity extends Activity {
         Button home = button("Home"); home.setOnClickListener(v->showHome());
 
         final MinecraftManifest[] holder=new MinecraftManifest[1];
+        final List<MinecraftVersion> selectable = new ArrayList<>();
+        CheckBox includeSnapshots = new CheckBox(this);
+        includeSnapshots.setText("Include snapshots / test builds");
+        includeSnapshots.setTextColor(textColor());
+        includeSnapshots.setChecked(false);
+        root.addView(includeSnapshots);
         Runnable load=()->worker.execute(()->{
             try {
                 runOnUiThread(()->status.setText("در حال دریافت فهرست رسمی..."));
                 String json=MinecraftManifestLoader.loadJson(new URL("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json"));
                 MinecraftManifest m=MinecraftManifestLoader.parse(json); holder[0]=m;
                 List<MinecraftVersion> versions=m.getVersions();
-                int count=Math.min(80,versions.size()); String[] ids=new String[count];
-                for(int i=0;i<count;i++) ids[i]=versions.get(i).id;
+                List<MinecraftVersion> releases = new ArrayList<>();
+                for (MinecraftVersion version : versions) {
+                    if ("release".equalsIgnoreCase(version.type)) releases.add(version);
+                }
                 runOnUiThread(()->{
-                    spinner.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,ids));
-                    install.setEnabled(count>0);
-                    status.setText("Latest release: "+m.getLatestRelease()+" • "+count+" versions");
+                    selectable.clear();
+                    selectable.addAll(releases);
+                    spinner.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,versionLabels(selectable)));
+                    install.setEnabled(!selectable.isEmpty());
+                    status.setText("Latest release: "+m.getLatestRelease()+" • "+selectable.size()+" releases");
+                    includeSnapshots.setOnCheckedChangeListener((buttonView, checked) -> {
+                        selectable.clear();
+                        if (checked) selectable.addAll(versions);
+                        else selectable.addAll(releases);
+                        spinner.setAdapter(new ArrayAdapter<String>(this,android.R.layout.simple_spinner_dropdown_item,versionLabels(selectable)));
+                        status.setText((checked ? "Releases + snapshots • " : "Official releases • ") + selectable.size() + " versions");
+                        install.setEnabled(!selectable.isEmpty());
+                    });
                 });
             } catch(Throwable e){runOnUiThread(()->status.setText("Version list error: "+String.valueOf(e.getMessage())));}
         });
         load.run();
         refresh.setOnClickListener(v->load.run());
         install.setOnClickListener(v->{
-            MinecraftManifest m=holder[0];
-            if(m==null) return;
+            if(holder[0]==null) return;
             int pos=spinner.getSelectedItemPosition();
-            if(pos>=0 && pos<m.getVersions().size()) installVersion(m.getVersions().get(pos));
+            if(pos>=0 && pos<selectable.size()) installVersion(selectable.get(pos));
         });
+    }
+
+    private String[] versionLabels(List<MinecraftVersion> versions) {
+        String[] labels = new String[versions.size()];
+        for (int i = 0; i < versions.size(); i++) {
+            MinecraftVersion v = versions.get(i);
+            labels[i] = v.id + ("release".equalsIgnoreCase(v.type) ? "  •  Release" : "  •  " + (v.type == null ? "Other" : v.type));
+        }
+        return labels;
     }
 
     private void installVersion(MinecraftVersion mv) {
