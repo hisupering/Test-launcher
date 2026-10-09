@@ -49,8 +49,10 @@ public final class MinecraftLaunchController {
         }
         cp.add(install.clientJar.toFile());
 
-        List<String> jvm = new ArrayList<>(
-                MinecraftArgumentResolver.resolve(install.version.jvmArguments, context));
+        // The launcher owns the final classpath. Mojang metadata may contain
+        // "-cp ${classpath}", which must not be left as an empty -cp pair.
+        List<String> rawJvm = withoutMetadataClasspath(install.version.jvmArguments);
+        List<String> jvm = new ArrayList<>(MinecraftArgumentResolver.resolve(rawJvm, context));
         jvm.add("-Xmx" + Math.max(512, ramMb) + "M");
         jvm.addAll(MinecraftLwjgl.jvmNativeProperties(context.nativesDirectory.toPath()));
         jvm.add("-Dsimple.native.path=" + context.nativesDirectory.getAbsolutePath());
@@ -67,6 +69,24 @@ public final class MinecraftLaunchController {
                 javaExecutable, gameDirectory, context.username,
                 install.version.id, jvm, commandArgs);
         engine.launch(config);
+    }
+
+    private static List<String> withoutMetadataClasspath(List<String> raw) {
+        List<String> result = new ArrayList<>();
+        if (raw == null) return result;
+        for (int i = 0; i < raw.size(); i++) {
+            String arg = raw.get(i);
+            if ("-cp".equals(arg) || "-classpath".equals(arg)) {
+                if (i + 1 < raw.size()) {
+                    String next = raw.get(i + 1);
+                    if (next != null && (next.contains("${classpath}") || !next.startsWith("-"))) i++;
+                }
+                continue;
+            }
+            if ("${classpath}".equals(arg)) continue;
+            result.add(arg);
+        }
+        return result;
     }
 
     public void stop() { engine.stop(); }
