@@ -6,9 +6,9 @@ import com.google.gson.JsonParser;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -58,11 +58,14 @@ public final class MinecraftInstaller {
         JsonObject objects = root.getAsJsonObject("objects");
         if (objects == null) return;
 
-        Set<String> hashes = new HashSet<>();
-        for (java.util.Map.Entry<String, JsonElement> entry : objects.entrySet()) {
+        Map<String, Long> hashes = new HashMap<>();
+        for (Map.Entry<String, JsonElement> entry : objects.entrySet()) {
             JsonElement e = entry.getValue();
             if (!e.isJsonObject() || !e.getAsJsonObject().has("hash")) continue;
-            hashes.add(e.getAsJsonObject().get("hash").getAsString());
+            JsonObject object = e.getAsJsonObject();
+            String hash = object.get("hash").getAsString();
+            long size = object.has("size") ? object.get("size").getAsLong() : -1L;
+            hashes.put(hash, size);
         }
 
         int threads = Math.max(2, Math.min(8, Runtime.getRuntime().availableProcessors()));
@@ -70,9 +73,11 @@ public final class MinecraftInstaller {
         CompletionService<Void> completed = new ExecutorCompletionService<>(pool);
         int pending = 0;
         try {
-            for (String hash : hashes) {
+            for (Map.Entry<String, Long> entry : hashes.entrySet()) {
+                String hash = entry.getKey();
+                long expectedSize = entry.getValue();
                 Path target = MinecraftAssetDownloader.objectPath(assetsRoot, hash);
-                if (Files.isRegularFile(target) && Files.size(target) > 0) continue;
+                if (Files.isRegularFile(target) && (expectedSize < 0 || Files.size(target) == expectedSize)) continue;
                 completed.submit(() -> {
                     MinecraftAssetDownloader.ensureObject(assetsRoot, hash);
                     return null;
