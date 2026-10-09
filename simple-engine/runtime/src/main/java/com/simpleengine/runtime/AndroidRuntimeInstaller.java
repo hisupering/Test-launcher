@@ -13,7 +13,7 @@ import java.util.Locale;
 
 public final class AndroidRuntimeInstaller {
     private static final String BASE =
-            "https://github.com/AngelAuraMC/angelauramc-openjdk-build/releases/download/release/";
+            "https://github.com/AngelAuraMC/angelauramc-openjdk-build/releases/download/download_jre21/";
     private AndroidRuntimeInstaller() {}
 
     public static File ensure(File root) throws Exception {
