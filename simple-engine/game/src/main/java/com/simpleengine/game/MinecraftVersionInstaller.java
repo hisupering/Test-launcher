@@ -18,7 +18,7 @@ public final class MinecraftVersionInstaller {
         Files.createDirectories(versionDir);
 
         Path jsonFile = versionDir.resolve(id + ".json");
-        Files.writeString(jsonFile, versionJson, StandardCharsets.UTF_8);
+        Files.write(jsonFile, versionJson.getBytes(StandardCharsets.UTF_8));
 
         return MinecraftVersionJsonParser.parse(
                 versionJson,
